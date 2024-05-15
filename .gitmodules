@@ -1,0 +1,6 @@
+[submodule "cmd_comm/thrid-party/cereal"]
+	path = cmd_comm/thrid-party/cereal
+	url = https://github.com/USCiLab/cereal.git
+[submodule "cmd_comm/thrid-party/mysylar"]
+	path = cmd_comm/thrid-party/mysylar
+	url = https://github.com/JiangZheng76/mysylar.git
