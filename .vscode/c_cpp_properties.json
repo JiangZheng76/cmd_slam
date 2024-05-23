@@ -5,7 +5,11 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/cmd_comm/src/**",
-                "${workspaceFolder}/cmd_comm/thrid-party/**"
+                "${workspaceFolder}/cmd_comm/thrid-party/mysylar/mysylar",
+                "${workspaceFolder}/cmd_comm/src",
+                "${workspaceFolder}/cmd_comm/thrid-party/cereal/include",
+                "/usr/local/include/eigen3",
+                "/usr/local/include/pcl-1.13"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang",

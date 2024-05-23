@@ -4,3 +4,6 @@
 [submodule "cmd_comm/thrid-party/mysylar"]
 	path = cmd_comm/thrid-party/mysylar
 	url = https://github.com/JiangZheng76/mysylar.git
+[submodule "cmd_backend/thrid-party/mysylar"]
+	path = cmd_backend/thrid-party/mysylar
+	url = https://github.com/JiangZheng76/mysylar.git

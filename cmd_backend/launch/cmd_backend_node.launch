@@ -1,0 +1,4 @@
+<launch>
+    <node name="backend" pkg="cmd_backend" type="cmd_backend_node" output="screen" required="true">
+    </node>
+</launch>

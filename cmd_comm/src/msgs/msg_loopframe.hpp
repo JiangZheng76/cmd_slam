@@ -24,7 +24,6 @@ namespace cmd
         Size m_img_dims; // w  h
         Vec4Type m_dist_coeffs;
         Vec4Type m_intrinsics; // fx fy cx cy
-        precision_t m_pyr_level;
 
     public:
         // const 类型只可以调用 const函数
@@ -32,35 +31,49 @@ namespace cmd
         precision_t getFy() const { return m_intrinsics[1]; }
         precision_t getCx() const { return m_intrinsics[2]; }
         precision_t getCy() const { return m_intrinsics[3]; }
+        void setIntrinsics(precision_t fx,precision_t fy,precision_t cx,precision_t cy){
+            m_k = KType::Identity();
+            m_k(0,0) = fx;
+            m_k(1,1) = fy;
+            m_k(0,2) = cx;
+            m_k(1,2) = cy;
+            m_intrinsics = {fx,fy,cx,cy};
+        }
 
     public:
         std::string dump();
 
         template <class Archive>
-        void serialize(Archive &archive)
-        {
-            archive(img_dims, dist_coeffs, intrinsics, k);
-        }
-    };
-
-    class MsgPoint
-    {
-
-        float u;
-        float v;
-        float idepth_scaled;
-        float maxRelBaseline;
-        float idepth_hessian;
-        template <class Archive>
-
         void load(Archive &archive)
         {
-            archive(u, v, idepth_scaled, maxRelBaseline, idepth_hessian);
+            archive(m_img_dims, m_dist_coeffs, m_intrinsics, m_k);
         }
+        
         template <class Archive>
         void save(Archive &archive) const
         {
-            archive(u, v, idepth_scaled, maxRelBaseline, idepth_hessian);
+            archive(m_img_dims, m_dist_coeffs, m_intrinsics, m_k);
+        }
+    };
+
+    struct MsgPoint
+    {
+        float m_u;
+        float m_v;
+        float m_idepth_scaled;
+        float m_maxRelBaseline;
+        float m_idepth_hessian;
+
+        template <class Archive>
+        void load(Archive &archive)
+        {
+            archive(m_u, m_v, m_idepth_scaled, m_maxRelBaseline, m_idepth_hessian);
+        }
+        
+        template <class Archive>
+        void save(Archive &archive) const
+        {
+            archive(m_u, m_v, m_idepth_scaled, m_maxRelBaseline, m_idepth_hessian);
         }
     };
 
@@ -72,6 +85,7 @@ namespace cmd
 
     public:
         MsgLoopframe();
+        MsgLoopframe(MsgType msgtype);
 
         // Interfaces
         void setMsgType(int msg_size);
@@ -83,11 +97,11 @@ namespace cmd
         bool m_is_update_msg;
 
         // Identifier
-        int_t m_kf_id;
+        int_t m_lf_id;
         int_t m_client_id;
         int_t m_incoming_id; // increasing id, for ground truth
         uint64_t m_timestamp;
-        MsgType m_msgtype; // 当前 msg 的类型
+        MsgType m_msgtype; // 当前 msg 的类型 [msg 长度, SentOnce, id.first, id.second，类型（lf or point）]
 
         Calibration m_calib; // DSO 参数
 
@@ -97,11 +111,11 @@ namespace cmd
         int_t m_img_x_max;
         int_t m_img_y_max;
 
-        TransMatrixType m_twc; // 本帧自身的位姿 quan+xyz double）
+        TransMatrixType m_twc; 
 
         // LoopEdge
-        std::vector<idpair> m_id_le_refs;          // loopedge id 与 client_id？？？
-        std::vector<TransQuatType> m_measurements; // 与 上一个关键帧之间的变换矩阵
+        std::vector<int_t> m_ref_id;          // idpair：ref ,顺序是从近到远
+        std::vector<TransMatrixType> m_ref_cf; // 与 上一个关键帧之间的变换矩阵 m_tf
 
         // pgo
         precision_t m_ab_exposure;   // 光度
@@ -109,57 +123,32 @@ namespace cmd
         precision_t m_scale_error;   // 尺度误差（好像 stereo-DSO 没有作用）
         precision_t m_pose_r_weight; // 普通的权重参数
 
-        std::vector<MsgPointPtr> m_msg_points; // 边缘化之后的 pointHessians，有深度信息了
+        std::vector<MsgPoint> m_msg_points; // 边缘化之后的 pointHessians，有深度信息了
 
     protected:
         friend class cereal::access; // Serialization
-        /**
-         * @brief 定义需要序列化的变量
-         * @description:
-         * @return {*}
-         */
+
         template <class Archive>
         auto save(Archive &archive) const -> void
         {
-            if (save_to_file)
+            if (m_is_update_msg)
             {
-                archive(kf_id, client_id, incoming_id, timestamp,
-                        calibration,
-                        img_dim_x_min, img_dim_y_min, img_dim_x_max, img_dim_y_max, ab_exposure,
-                        pts_spherical_, dso_pts, dIps_,
-                        T_w_c, id_predecessor, id_reference,
-                        id_le_refs, measurements, msg_type,
-                        dso_error, scale_error, pose_r_weight,
-                        pointHessians,
-                        pointHessiansMarginalized,
-                        pointHessiansOut);
-            }
-            else if (is_update_msg)
-            {
-                archive(kf_id, client_id, incoming_id, timestamp,
-                        calibration,
-                        img_dim_x_min, img_dim_y_min, img_dim_x_max, img_dim_y_max, ab_exposure,
-                        pts_spherical_, dso_pts, dIps_,
-                        T_w_c, id_predecessor, id_reference,
-                        id_le_refs, measurements, msg_type,
-                        dso_error, scale_error, pose_r_weight,
-                        pointHessians,
-                        pointHessiansMarginalized,
-                        pointHessiansOut);
+                archive(m_lf_id, m_client_id, m_incoming_id, m_timestamp,
+                        m_calib,
+                        m_img_x_min, m_img_y_min, m_img_x_max, m_img_y_max,
+                        m_twc, m_ref_id, m_ref_cf,
+                        m_ab_exposure, m_dso_error, m_scale_error,m_pose_r_weight,
+                        m_msg_points);
             }
             else
             {
-                assert(msg_type.size() == 5);
-                archive(kf_id, client_id, incoming_id, timestamp,
-                        calibration,
-                        img_dim_x_min, img_dim_y_min, img_dim_x_max, img_dim_y_max, ab_exposure,
-                        pts_spherical_, dso_pts, dIps_,
-                        T_w_c, id_predecessor, id_reference,
-                        id_le_refs, measurements, msg_type,
-                        dso_error, scale_error, pose_r_weight,
-                        pointHessians,
-                        pointHessiansMarginalized,
-                        pointHessiansOut);
+                assert(m_msgtype.size() == 5);
+                archive(m_lf_id, m_client_id, m_incoming_id, m_timestamp,
+                        m_calib,
+                        m_img_x_min, m_img_y_min, m_img_x_max, m_img_y_max,
+                        m_twc, m_ref_id, m_ref_cf,
+                        m_ab_exposure, m_dso_error, m_scale_error,m_pose_r_weight,
+                        m_msg_points);
             }
         }
 
@@ -171,45 +160,24 @@ namespace cmd
         template <class Archive>
         auto load(Archive &archive) -> void
         {
-            if (save_to_file)
+            if (m_is_update_msg)
             {
-                archive(kf_id, client_id, incoming_id, timestamp,
-                        calibration,
-                        img_dim_x_min, img_dim_y_min, img_dim_x_max, img_dim_y_max, ab_exposure,
-                        pts_spherical_, dso_pts, dIps_,
-                        T_w_c, id_predecessor, id_reference,
-                        id_le_refs, measurements, msg_type,
-                        dso_error, scale_error, pose_r_weight,
-                        pointHessians,
-                        pointHessiansMarginalized,
-                        pointHessiansOut);
-            }
-            else if (is_update_msg)
-            {
-                archive(kf_id, client_id, incoming_id, timestamp,
-                        calibration,
-                        img_dim_x_min, img_dim_y_min, img_dim_x_max, img_dim_y_max, ab_exposure,
-                        pts_spherical_, dso_pts, dIps_,
-                        T_w_c, id_predecessor, id_reference,
-                        id_le_refs, measurements, msg_type,
-                        dso_error, scale_error, pose_r_weight,
-                        pointHessians,
-                        pointHessiansMarginalized,
-                        pointHessiansOut);
+                archive(m_lf_id, m_client_id, m_incoming_id, m_timestamp,
+                        m_calib,
+                        m_img_x_min, m_img_y_min, m_img_x_max, m_img_y_max,
+                        m_twc, m_ref_id, m_ref_cf,
+                        m_ab_exposure, m_dso_error, m_scale_error,m_pose_r_weight,
+                        m_msg_points);
             }
             else
             {
-                assert(msg_type.size() == 5);
-                archive(kf_id, client_id, incoming_id, timestamp,
-                        calibration,
-                        img_dim_x_min, img_dim_y_min, img_dim_x_max, img_dim_y_max, ab_exposure,
-                        pts_spherical_, dso_pts, dIps_,
-                        T_w_c, id_predecessor, id_reference,
-                        id_le_refs, measurements, msg_type,
-                        dso_error, scale_error, pose_r_weight,
-                        pointHessians,
-                        pointHessiansMarginalized,
-                        pointHessiansOut);
+                assert(m_msgtype.size() == 5);
+                archive(m_lf_id, m_client_id, m_incoming_id, m_timestamp,
+                        m_calib,
+                        m_img_x_min, m_img_y_min, m_img_x_max, m_img_y_max,
+                        m_twc, m_ref_id, m_ref_cf,
+                        m_ab_exposure, m_dso_error, m_scale_error,m_pose_r_weight,
+                        m_msg_points);
             }
         }
     };
@@ -245,6 +213,14 @@ namespace cereal
         matrix.resize(rows, cols);
 
         ar(binary_data(matrix.data(), static_cast<std::size_t>(rows * cols * sizeof(_Scalar))));
+    }
+    // 定义 TransMatrixType 的序列化方式
+    template <class Archive>
+    void serialize(Archive & ar, cmd::TransMatrixType& trans)
+    {
+        int32_t rows = 4;
+        int32_t cols = 4;
+        ar(binary_data(trans.data(), static_cast<std::size_t>(rows * cols * sizeof(double))));
     }
 
 } /* namespace cereal */

@@ -1,0 +1,16 @@
+/build/
+
+% Ignore VS code settings
+.vscode
+
+% Ignore Mac stuff
+.DS_Store
+
+% Ignore media files
+*.png
+*.mp4
+
+.so
+.a
+
+vo/
