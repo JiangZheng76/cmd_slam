@@ -29,12 +29,15 @@
 #include <memory>
 #include <flann/flann.hpp>
 
+#include "typedefs_backend.hpp"
+
 typedef std::vector<std::pair<int, double>> SigType;
 namespace cmd
 {
   class ScanContext
   {
   public:
+    // EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     typedef std::shared_ptr<ScanContext> Ptr;
     ScanContext();
     ScanContext(int s, int r);
@@ -42,7 +45,7 @@ namespace cmd
     unsigned int getHeight();
     unsigned int getWidth();
 
-    void generate(const std::vector<Eigen::Vector3d> &pts_spherical,
+    void generate(const Point3Vector &pts_spherical,
                   flann::Matrix<float> &ringkey, SigType &signature,
                   double lidar_range, Eigen::Matrix4d &tfm_pca_rig);
 

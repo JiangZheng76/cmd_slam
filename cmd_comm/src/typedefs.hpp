@@ -1,4 +1,10 @@
 #pragma once
+//#define EIGEN_DONT_ALIGN
+#include <Eigen/Core>
+#include <Eigen/Eigen>
+#include <Eigen/Sparse>
+#include <Eigen/Geometry>
+#include <Eigen/StdVector>
 
 #include <memory>
 #include <vector>
@@ -6,8 +12,8 @@
 #include <sstream>
 
 // thrid-party
-// #include "Eigen/Core"
-#include "sophus/se3.hpp"
+#include <Eigen/Core>
+#include <sophus/se3.hpp>
 // sylar
 #include <log.h>
 #include <address.h>
@@ -15,6 +21,7 @@
 #include <socket_stream.h>
 #include <thread.hh>
 // using namespace mysylar;
+
 namespace cmd
 {
     using namespace mysylar;
@@ -40,15 +47,13 @@ namespace cmd
     using ThreadPtr = mysylar::Thread::ptr;
 
 }
-#include <eigen3/Eigen/Core>
-#include <eigen3/Eigen/Geometry>
 
 namespace cmd
 {
 
     class MsgPoint;
     class MsgLoopframe;
-    struct DataBundle;
+    class DataBundle;
     struct MessageContainer;
 
     using MsgLoopframePtr = std::shared_ptr<MsgLoopframe>;
@@ -79,17 +84,26 @@ namespace cmd
     using VectorNType = Eigen::Matrix<precision_t, N, 1>;
     using Vec2Type = VectorNType<2>;
     using Vec3Type = VectorNType<3>;
-    using Vec3bType = Eigen::Matrix<unsigned char,3,1>;
-    using Vec4Type = VectorNType<4>;
+    using Vec3bType = Eigen::Matrix<unsigned char, 3, 1>;
+    using Vec4Type = std::vector<precision_t>;
 
     using Size = Vec2Type; // w h
     using KType = Matrix3Type;
 
     using TransMatrixType = Sophus::SE3d;
-    
+    using EigenMatrix = Eigen::Matrix4d;
 
     using RotateMatrixType = Sophus::SO3d;
 
     using TransQuatType = precision_t[6];
 
 };
+
+namespace cmd
+{
+    using DataBundleList = std::list<DataBundlePtr>;
+    using MsgLoopframeList = std::list<MsgLoopframePtr>;
+    using MessageContainerList = std::list<MessageContainerPtr>;
+    using TransMatrixVector = std::vector<TransMatrixType, Eigen::aligned_allocator<TransMatrixType>>;
+    using EigenMatrixVector = std::vector<EigenMatrix, Eigen::aligned_allocator<EigenMatrix>>;
+}

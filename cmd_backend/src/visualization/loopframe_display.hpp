@@ -28,21 +28,6 @@
 
 namespace cmd
 {
-
-    template <int ppp>
-    struct InputPointSparse
-    {
-        typedef std::shared_ptr<InputPointSparse> Ptr;
-        float u;
-        float v;
-        float idpeth;
-        float idepth_hessian;
-        float relObsBaseline;
-        int numGoodRes;
-        unsigned char color[ppp];
-        unsigned char status;
-    };
-
     struct MyVertex
     {
         float point[3];
@@ -58,50 +43,34 @@ namespace cmd
         ~LoopframeDisplay();
 
         void refreshPC();
-
         void drawPC(float pointSize);
 
+        void setFromLF(LoopframePtr lf);
         void initColor(std::vector<float> color);
 
     public:
         // id 设置为uint64 位
         bool m_active;
         bool m_need_refresh;
-        uint64_t m_client_lf_id;
+        uint64_t m_lf_id;
         TransMatrixType m_Twc;
 
         MutextType m_muetx;
 
-        inline bool operator<(const LoopframeDisplay &other) const
-        {
-            return (m_client_lf_id < other.m_client_lf_id);
-        }
-
         LoopframePtr m_lf;
 
     private:
-        void setFromLF(LoopframePtr lf);
+        int m_num_sparse_points;      // point 个数
+        int m_num_sparse_buffer_size; // 符合条件的可以输出点个数
 
-    private:
-        float m_fx, m_fy, m_cx, m_cy;
-        float m_fxi, m_fyi, m_cxi, m_cyi;
-        int m_width, m_height;
+        bool m_buffer_valid;             // gl buf 是否合理的标识
+        int m_num_gl_buffer_points;      // gl buf 中点的数目
+        int m_num_gl_buffer_good_points; // 最新的 gl 可以用到好点
 
-        float m_my_scaled_th, m_my_abs_th, m_my_scale;
-        int m_my_sparsify_factor;
-        int m_my_displayMode;
-        float m_my_min_rel_bs;
-
-        int m_num_sparse_points;                                                  // point 个数
-        int m_num_sparse_buffer_size;                                             // 符合条件的可以输出点个数
-        std::vector<InputPointSparse<MAX_RES_PER_POINT>> m_original_input_sparse; // 当前帧的信息
-
-        bool m_buffer_valid;                // gl buf 是否合理的标识
-        int m_num_gl_buffer_points;         // gl buf 中点的数目
-        int m_num_gl_buffer_good_points;    // 最新的 gl 可以用到好点
-        std::vector<float> m_color;         // 存储的颜色
-        pangolin::GlBuffer m_vertex_buffer; // 最终显示的点
-        pangolin::GlBuffer m_color_buffer;  // 最终显示的颜色，下标和点对应
+        std::vector<Point2> m_original_point2s; // 当前帧的点
+        std::vector<float> m_color;             // 存储的颜色
+        pangolin::GlBuffer m_vertex_buffer;     // 最终显示的点
+        pangolin::GlBuffer m_color_buffer;      // 最终显示的颜色，下标和点对应
     };
 
 } // namespace dso

@@ -18,26 +18,28 @@ namespace cmd
 
     class Calibration
     {
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         KType m_k;
         Size m_img_dims; // w  h
         Vec4Type m_dist_coeffs;
         Vec4Type m_intrinsics; // fx fy cx cy
 
     public:
+        Calibration();
         // const 类型只可以调用 const函数
         precision_t getFx() const { return m_intrinsics[0]; }
         precision_t getFy() const { return m_intrinsics[1]; }
         precision_t getCx() const { return m_intrinsics[2]; }
         precision_t getCy() const { return m_intrinsics[3]; }
-        void setIntrinsics(precision_t fx,precision_t fy,precision_t cx,precision_t cy){
+        void setIntrinsics(precision_t fx, precision_t fy, precision_t cx, precision_t cy)
+        {
             m_k = KType::Identity();
-            m_k(0,0) = fx;
-            m_k(1,1) = fy;
-            m_k(0,2) = cx;
-            m_k(1,2) = cy;
-            m_intrinsics = {fx,fy,cx,cy};
+            m_k(0, 0) = fx;
+            m_k(1, 1) = fy;
+            m_k(0, 2) = cx;
+            m_k(1, 2) = cy;
+            m_intrinsics = {fx, fy, cx, cy};
         }
 
     public:
@@ -48,7 +50,7 @@ namespace cmd
         {
             archive(m_img_dims, m_dist_coeffs, m_intrinsics, m_k);
         }
-        
+
         template <class Archive>
         void save(Archive &archive) const
         {
@@ -69,7 +71,7 @@ namespace cmd
         {
             archive(m_u, m_v, m_idepth_scaled, m_maxRelBaseline, m_idepth_hessian);
         }
-        
+
         template <class Archive>
         void save(Archive &archive) const
         {
@@ -80,12 +82,11 @@ namespace cmd
     class MsgLoopframe
     {
     public:
-        typedef std::shared_ptr<MsgLoopframe> Ptr;
-        // EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    public:
         MsgLoopframe();
         MsgLoopframe(MsgType msgtype);
+        ~MsgLoopframe();
 
         // Interfaces
         void setMsgType(int msg_size);
@@ -105,17 +106,16 @@ namespace cmd
 
         Calibration m_calib; // DSO 参数
 
-        // image 
+        EigenMatrix m_twc;
+        // LoopEdge
+        std::vector<int_t> m_ref_id; // idpair：ref ,顺序是从近到远
+        EigenMatrixVector m_ref_cf;  // 与 上一个关键帧之间的变换矩阵 m_tf
+
+        // image
         int_t m_img_x_min; // 的 xy范围，最大和最小值
         int_t m_img_y_min;
         int_t m_img_x_max;
         int_t m_img_y_max;
-
-        TransMatrixType m_twc; 
-
-        // LoopEdge
-        std::vector<int_t> m_ref_id;          // idpair：ref ,顺序是从近到远
-        std::vector<TransMatrixType> m_ref_cf; // 与 上一个关键帧之间的变换矩阵 m_tf
 
         // pgo
         precision_t m_ab_exposure;   // 光度
@@ -123,8 +123,7 @@ namespace cmd
         precision_t m_scale_error;   // 尺度误差（好像 stereo-DSO 没有作用）
         precision_t m_pose_r_weight; // 普通的权重参数
 
-        std::vector<MsgPoint> m_msg_points; // 边缘化之后的 pointHessians，有深度信息了
-
+        std::vector<MsgPoint, Eigen::aligned_allocator<MsgPoint>> m_msg_points; // 边缘化之后的 pointHessians，有深度信息了
     protected:
         friend class cereal::access; // Serialization
 
@@ -135,9 +134,9 @@ namespace cmd
             {
                 archive(m_lf_id, m_client_id, m_incoming_id, m_timestamp,
                         m_calib,
-                        m_img_x_min, m_img_y_min, m_img_x_max, m_img_y_max,
                         m_twc, m_ref_id, m_ref_cf,
-                        m_ab_exposure, m_dso_error, m_scale_error,m_pose_r_weight,
+                        m_img_x_min, m_img_y_min, m_img_x_max, m_img_y_max,
+                        m_ab_exposure, m_dso_error, m_scale_error, m_pose_r_weight,
                         m_msg_points);
             }
             else
@@ -145,9 +144,9 @@ namespace cmd
                 assert(m_msgtype.size() == 5);
                 archive(m_lf_id, m_client_id, m_incoming_id, m_timestamp,
                         m_calib,
-                        m_img_x_min, m_img_y_min, m_img_x_max, m_img_y_max,
                         m_twc, m_ref_id, m_ref_cf,
-                        m_ab_exposure, m_dso_error, m_scale_error,m_pose_r_weight,
+                        m_img_x_min, m_img_y_min, m_img_x_max, m_img_y_max,
+                        m_ab_exposure, m_dso_error, m_scale_error, m_pose_r_weight,
                         m_msg_points);
             }
         }
@@ -164,9 +163,9 @@ namespace cmd
             {
                 archive(m_lf_id, m_client_id, m_incoming_id, m_timestamp,
                         m_calib,
-                        m_img_x_min, m_img_y_min, m_img_x_max, m_img_y_max,
                         m_twc, m_ref_id, m_ref_cf,
-                        m_ab_exposure, m_dso_error, m_scale_error,m_pose_r_weight,
+                        m_img_x_min, m_img_y_min, m_img_x_max, m_img_y_max,
+                        m_ab_exposure, m_dso_error, m_scale_error, m_pose_r_weight,
                         m_msg_points);
             }
             else
@@ -174,9 +173,9 @@ namespace cmd
                 assert(m_msgtype.size() == 5);
                 archive(m_lf_id, m_client_id, m_incoming_id, m_timestamp,
                         m_calib,
-                        m_img_x_min, m_img_y_min, m_img_x_max, m_img_y_max,
                         m_twc, m_ref_id, m_ref_cf,
-                        m_ab_exposure, m_dso_error, m_scale_error,m_pose_r_weight,
+                        m_img_x_min, m_img_y_min, m_img_x_max, m_img_y_max,
+                        m_ab_exposure, m_dso_error, m_scale_error, m_pose_r_weight,
                         m_msg_points);
             }
         }
@@ -216,11 +215,23 @@ namespace cereal
     }
     // 定义 TransMatrixType 的序列化方式
     template <class Archive>
-    void serialize(Archive & ar, cmd::TransMatrixType& trans)
+    void serialize(Archive &ar, cmd::TransMatrixType &trans)
     {
         int32_t rows = 4;
         int32_t cols = 4;
+        // ar(binary_data(trans.data(), static_cast<std::size_t>(rows * cols * sizeof(double))));
         ar(binary_data(trans.data(), static_cast<std::size_t>(rows * cols * sizeof(double))));
     }
+    // template <class Archive>
+    // void serialize(Archive &ar, cmd::EigenMatrix &trans)
+    // {
+    //     // const std::int32_t rows = static_cast<std::int32_t>(matrix.rows());
+    //     // const std::int32_t cols = static_cast<std::int32_t>(matrix.cols());
+    //     // ar(binary_data(trans.data(), static_cast<std::size_t>(rows * cols * sizeof(double))));
+    //     ar(binary_data(trans(0,0),trans(0,1),trans(0,2),trans(0,3)
+    //                     ,trans(1,0),trans(1,1),trans(1,2),trans(1,3)
+    //                     ,trans(2,0),trans(2,1),trans(2,2),trans(2,3)
+    //                     ,trans(3,0),trans(3,1),trans(3,2),trans(3,3));
+    // }
 
 } /* namespace cereal */

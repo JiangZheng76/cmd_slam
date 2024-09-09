@@ -7,6 +7,7 @@ namespace cmd
     class Communicator : public CommunicatorBase
     {
     public:
+        // EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         Communicator(int client_id, SocketPtr sock,
                       LoopHandlerPtr loop_handler, MapmanagerPtr mapMgr);
 

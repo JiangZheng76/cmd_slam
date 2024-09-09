@@ -5,7 +5,7 @@
 #include <vector>
 #include <set>
 #include <mutex>
-#include <eigen3/Eigen/Core>
+#include  <Eigen/Core>
 #include <opencv2/opencv.hpp>
 
 #include "cmd_comm.hpp"
@@ -15,28 +15,30 @@
 
 #include "typedefs_backend.hpp"
 
-#define DSO_ERROR_SCALE 5.0
-#define SCALE_ERROR_SCALE 0.1
-#define DIRECT_ERROR_SCALE 0.1
-#define ICP_ERROR_SCALE 1.0
 // #define FMT_HEADER_ONLY
 // #include "fmt/format.h"
 
 namespace cmd
 {
 
-  class Point
+  class Point2
   {
   public:
-    Point(const MsgPoint &msg);
+    Point2(){}
+    Point2(const MsgPoint &msg);
 
-    float m_u;
-    float m_v;
-    float m_idepth_scaled;
-    float m_maxRelBaseline;
-    float m_idepth_hessian;
+    precision_t m_u;
+    precision_t m_v;
+    precision_t m_idepth_scaled;
+    precision_t m_maxRelBaseline;
+    precision_t m_idepth_hessian;
   };
 
+  enum EdgeType
+  {
+    LOOPCLOSURE = 0,
+    REFERENCE = 1
+  };
   struct LoopEdge
   {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -52,7 +54,9 @@ namespace cmd
     precision_t m_icp_score; // icp 匹配得分
     precision_t m_sc_score;  // sc 匹配得分
 
-    LoopEdge(LoopframePtr from, LoopframePtr to, const TransMatrixType &t_tf, precision_t icp_error, precision_t sc_error);
+    EdgeType m_type;
+
+    LoopEdge(LoopframePtr from, LoopframePtr to, const TransMatrixType &t_tf, precision_t icp_error, precision_t sc_error, EdgeType type);
   };
 
   class Loopframe : public std::enable_shared_from_this<Loopframe>
@@ -73,7 +77,7 @@ namespace cmd
     TransMatrixType m_twc; // coordinate in pose graph
 
     // ceres optimization
-    precision_t m_ceres_pose[7]; // sim3
+    VecSim3 m_ceres_pose; // tcw
 
     // heuristics for setting edge information
     precision_t m_dso_error;   // 前后帧之间的残差函数的结果值 乘上了一个系数
@@ -81,12 +85,12 @@ namespace cmd
     precision_t m_ab_exposure;
 
     // loop edge
-    std::vector<Point> m_points;
-    std::vector<PointPos> m_pts_spherical; // loop correction by icp
+    Point2Vector m_points;
+    Point3Vector m_pts_spherical; // loop correction by icp
 
-    std::vector<int_t> m_ref_id;           // 从 msg 来的reference 帧 id
-    std::vector<TransMatrixType> m_ref_cf; // 从 msg 来的reference 帧 相对位姿
-    std::vector<LoopEdgePtr> m_edges;
+    std::vector<int_t> m_ref_id;                                                      // 从 msg 来的reference 帧 id
+    TransMatrixVector m_ref_cf; // 从 msg 来的reference 帧 相对位姿
+    LoopEdgeVector m_edges;
 
     // control default is false
     bool m_is_first;

@@ -13,6 +13,7 @@ namespace cmd {
 class FrontEndComm : public CommunicatorBase
     {
     public:
+        // EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         FrontEndComm(std::string ip,std::string port);
         virtual ~FrontEndComm(){}
         
@@ -24,8 +25,8 @@ class FrontEndComm : public CommunicatorBase
         void publishMsg(MsgLoopframePtr msg);
 
     public:
-        std::list<MsgLoopframePtr> m_process_lfs;
-        size_t m_ref_num = 4;
+        MsgLoopframeList m_process_lfs;
+        size_t m_ref_num = 1;
 };
 
 } //end ns

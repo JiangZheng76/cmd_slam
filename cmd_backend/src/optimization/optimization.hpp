@@ -1,7 +1,7 @@
 #pragma once
 
 // C++
-#include <eigen3/Eigen/Eigen>
+#include <Eigen/Core>
 #include "typedefs_backend.hpp"
 namespace cmd
 {
@@ -9,6 +9,7 @@ namespace cmd
     class MapOptimizationWrap
     {
     public:
+        // EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         MapOptimizationWrap(MapPtr map);
         ~MapOptimizationWrap();
 
@@ -18,8 +19,11 @@ namespace cmd
     class Optimization
     {
     public:
+        // EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         Optimization() = delete;
         static void Sim3PoseGraphOptimization(MapPtr map);
+
+        static void PCMPoseGraphOptimization(MapPtr map,LoopEdgeVector les); 
     };
 
 } // end ns

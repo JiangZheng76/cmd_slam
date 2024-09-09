@@ -4,7 +4,7 @@
 
 using namespace cmd;
 
-LoggerPtr g_logger = SYLAR_LOG_NAME("cmd-slam");
+LoggerPtr g_logger = SYLAR_LOG_NAME("CMD-SLAM");
 
 int main(int argc, char* argv[]){
     

@@ -8,7 +8,7 @@
 namespace cmd
 {
 
-    static LoggerPtr g_logger_sys = SYLAR_LOG_NAME("system");
+    static LoggerPtr g_logger_sys = SYLAR_LOG_NAME("LOOP-CLOSURE");
 
     LoopHandler::LoopHandler(float lidar_range, float scan_context_thres, MapmanagerPtr mapMgr)
         : m_lidar_range(lidar_range),
@@ -36,7 +36,7 @@ namespace cmd
     }
     void LoopHandler::Run()
     {
-        SYLAR_LOG_INFO(g_logger_sys) << "--> START Loop Thread.";
+        SYLAR_LOG_INFO(g_logger_sys) << "--> START Loop Handler Thread.";
         while (m_running)
         {
             LoopframePtr query_frame = nullptr;
@@ -64,13 +64,13 @@ namespace cmd
             /* == Get ringkey and signature from the aligned points by Scan Context = */
             // 生成当前帧的
             flann::Matrix<float> ringkey;
-            SigType signature;           // sc的签名
-            Eigen::Matrix4d tfm_pca_rig; // pca对齐矩阵
+            SigType signature;                                     // sc的签名
+            Eigen::Matrix4d tfm_pca_rig = EigenMatrix::Identity(); // pca对齐矩阵
 
             m_sc->generate(query_frame->m_pts_spherical, ringkey, signature,
                            m_lidar_range, tfm_pca_rig);
 
-            query_frame->m_t_pca_rig = TransMatrixType(tfm_pca_rig);
+            query_frame->m_t_pca_rig = ToOrthogonalTrans(tfm_pca_rig);
             query_frame->m_signature = signature;
             query_frame->m_ringkey = ringkey;
 
@@ -97,10 +97,6 @@ namespace cmd
                 {
                     // 获取找到的回环帧
                     auto matched_frame = m_preocessed_lf[matched_idx];
-                    SYLAR_LOG_INFO(g_logger_sys)
-                        << "【agent id:" << query_frame->m_lf_id << ",iid:" << query_frame->m_incoming_id << "】-"
-                        << "【agent id:" << matched_frame->m_lf_id << ",iid:" << matched_frame->m_incoming_id << "】"
-                        << " SC: " << sc_diff << " ";
                     // 判断两帧之间的距离有没有太远
                     if (m_mapMgr->getMap(query_frame->m_client_id) == m_mapMgr->getMap(matched_frame->m_client_id))
                     {
@@ -109,7 +105,10 @@ namespace cmd
                         // 如果很远但信服度很高也会继续执行下去 &&  sc_diff > scan_context_thres_ - 0.08
                         if (dis > DISTANCE_THRES)
                         {
-                            SYLAR_LOG_WARN(g_logger_sys) << "\033[1;31mDISTANCE TOO FAR.\033[0m " << dis;
+                            SYLAR_LOG_DEBUG(g_logger_sys)
+                                << "[agent id:" << query_frame->m_client_id << ",iid:" << query_frame->m_incoming_id << "]-"
+                                << "[agent id:" << matched_frame->m_client_id << ",iid:" << matched_frame->m_incoming_id << "] "
+                                << "SC: " << sc_diff << " TOO FAR. " << dis;
                             continue;
                         }
                     }
@@ -126,25 +125,33 @@ namespace cmd
                     Eigen::Matrix4d tfm_query_matched_icp = T_tf_icp.matrix();
                     icp_succ = icp(matched_frame->m_pts_spherical, query_frame->m_pts_spherical,
                                    tfm_query_matched_icp, icp_error);
-                    T_tf_icp = TransMatrixType(tfm_query_matched_icp);
+                    // tfm_query_matched_icp = matched_frame->m_twc.inverse().matrix() * query_frame->m_twc.matrix() * tfm_query_matched_icp;
+                    T_tf_icp = ToOrthogonalTrans(tfm_query_matched_icp);
                     icp_error *= ICP_ERROR_SCALE;
 
                     // 第一帧对于icp的要求严格一点
                     if (!icp_succ)
                     {
-                        std::cout << " No" << std::endl;
+                        SYLAR_LOG_DEBUG(g_logger_sys)
+                            << "[agent id:" << query_frame->m_client_id << ",iid:" << query_frame->m_incoming_id << "]-"
+                            << "[agent id:" << matched_frame->m_client_id << ",iid:" << matched_frame->m_incoming_id << "] "
+                            << icp_error << " No";
                         continue;
                     }
                     else
                     {
-                        std::cout << "\033[1;32m Yes \033[0m" << std::endl;
+                        SYLAR_LOG_DEBUG(g_logger_sys)
+                            << "[agent id:" << query_frame->m_client_id << ",iid:" << query_frame->m_incoming_id << "]-"
+                            << "[agent id:" << matched_frame->m_client_id << ",iid:" << matched_frame->m_incoming_id << "] "
+                            << icp_error << " \033[1;32m Yes \033[0m";
                     }
                     // 自动合并 mapmanager 执行优化和合并
+                    // TODO T_tf_icp 有问题，不是两个 agent 之间的变换矩阵
                     m_mapMgr->createConstrant(matched_frame, query_frame, T_tf_icp, icp_error, sc_diff);
                 }
             }
         }
-        SYLAR_LOG_INFO(g_logger_sys) << "<-- END Loop Thread.";
+        SYLAR_LOG_INFO(g_logger_sys) << "<-- END Loop Handler Thread.";
     }
 
     void LoopHandler::join()

@@ -48,6 +48,6 @@ namespace cmd
         virtual int GlobalSize() const { return 7; }
         virtual int LocalSize() const { return 7; }
 
-        static int Size(){ return 7; }
+        static int Size() { return 7; }
     };
 }

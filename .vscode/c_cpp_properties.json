@@ -8,8 +8,12 @@
                 "${workspaceFolder}/cmd_comm/thrid-party/mysylar/mysylar",
                 "${workspaceFolder}/cmd_comm/src",
                 "${workspaceFolder}/cmd_comm/thrid-party/cereal/include",
+                "${workspaceFolder}/cmd_backend/thrid-party/Kimera-RPGO/include",
+                "${workspaceFolder}/cmd_backend/thrid-party/Kimera-RPGO/include/KimeraRPGO",
                 "/usr/local/include/eigen3",
-                "/usr/local/include/pcl-1.13"
+                "/usr/local/include/pcl-1.13",
+                "/usr/local/include/gtsam",
+                "/usr/include/eigen3"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang",

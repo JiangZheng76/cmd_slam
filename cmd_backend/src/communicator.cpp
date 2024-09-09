@@ -5,7 +5,7 @@
 
 namespace cmd
 {
-    static LoggerPtr g_logger_sys = SYLAR_LOG_NAME("system");
+    static LoggerPtr g_logger_sys = SYLAR_LOG_NAME("CMD-SLAM");
     Communicator::Communicator(int client_id, SocketPtr sock, LoopHandlerPtr loop_handler,MapmanagerPtr mapMgr)
         : CommunicatorBase(client_id, sock), m_loophander(loop_handler),m_mapmanager(mapMgr)
     {
@@ -19,8 +19,9 @@ namespace cmd
         {
             out_container.msg_info.push_back(0);
         }
-        sendMsgContainer(out_container);
 
+
+        sendMsgContainer(out_container);
         SYLAR_LOG_INFO(g_logger_sys) << "Pass new ID " << m_client_id << " to client";
     }
 
@@ -61,17 +62,17 @@ namespace cmd
     /// @brief 将接收到的 msg 转化成 lf，放入到待处理的队列中
     void Communicator::processRecvMsgLoopframe()
     {
-        size_t cnt = 0;
+        
+        std::unique_lock<std::mutex> lk(m_mtx_msg_in);
         // 遍历接受的loopframe，每次最多放5帧新帧 【cnt】
+        size_t cnt = 0;
         while (cnt < 5 && !m_buf_msg_in.empty())
         {
             MsgLoopframePtr msg = m_buf_msg_in.front();
             m_buf_msg_in.pop_front();
-
             if (msg->m_is_update_msg)
             { // 更新帧
-                SYLAR_LOG_INFO(g_logger_sys) << "get the update loopframe.";
-
+                SYLAR_LOG_INFO(g_logger_sys) << "UPDATE MsgLoopframe.";
                 auto map = m_mapmanager->getMap(msg->m_client_id);
                 map->updateLoopframeFromMsg(msg);
             }
@@ -79,12 +80,8 @@ namespace cmd
             { // 新帧
                 LoopframePtr lf(new Loopframe(msg));
                 // 是最新的帧
-                if (!lf)
-                {
-                    m_mapmanager->addLoopframe(lf);
-                    m_loophander->pushLoopframe2Buf(lf);
-                    
-                }
+                m_mapmanager->addLoopframe(lf);
+                m_loophander->pushLoopframe2Buf(lf);
             }
             cnt++;
         }

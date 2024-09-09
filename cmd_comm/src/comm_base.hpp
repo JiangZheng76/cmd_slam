@@ -6,7 +6,7 @@
 #include <thread>
 #include <list>
 #include <netinet/in.h>
-#include <eigen3/Eigen/Core>
+#include  <Eigen/Core>
 
 // cmd
 #include "typedefs.hpp"
@@ -18,10 +18,12 @@ namespace cmd
 {
 
     // 待发送lf集
-    struct DataBundle
+    class DataBundle
     {
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-        std::list<MsgLoopframePtr> m_lfs;
+        public:
+        // EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+        // ！！！ EIGEN_MAKE_ALIGNED_OPERATOR_NEW也会导致释放智能指针时候的double free 的问题
+        MsgLoopframeList m_lfs;
     };
 
     /**
@@ -117,32 +119,34 @@ namespace cmd
         // Infrastructure
         int m_client_id = -1;
         // Data
+        std::mutex m_mtx_recv_data_info;
         std::list<std::vector<char>> m_buf_recv_data;     // 保存接受的对象字节流信息
         std::list<std::vector<uint32_t>> m_buf_recv_info; // 保存接收 msg 对象的信息，和 buffer_recv_data_ 一一对应
 
-        std::list<DataBundlePtr> m_buf_datas_out; // 点云 和 loopframe打包好的 待发送 buffer
-        std::list<MsgLoopframePtr> m_buf_msg_out; // 准备发送的 lf msg
-        std::list<MsgLoopframePtr> m_buf_msg_in;  // 接收到的 lf msg
+        std::mutex m_mtx_datas_out;
+        DataBundleList m_buf_datas_out; // 点云 和 loopframe打包好的 待发送 buffer
+        
+        std::mutex m_mtx_msg_out; // 准备发送 msg buf 锁
+        MsgLoopframeList m_buf_msg_out; // 准备发送的 lf msg
+
+        std::mutex m_mtx_msg_in; // 准备接收 msg buf 锁
+        MsgLoopframeList m_buf_msg_in;  // 接收到的 lf msg
 
         // Sync
         std::mutex m_mtx_comm; // comm 执行线程锁
         std::mutex m_mtx_finish;
-        std::mutex m_mtx_recv_buffer;
-        std::mutex m_mtx_out; // 准备发送 msg buf 锁
-        std::mutex m_mtx_in; // 准备接收 msg buf 锁
-
+        
         bool m_finish = false;
         bool m_is_finished = false;
 
         // message passing
+        std::mutex m_mtx_recv_buf;
         std::vector<char> m_recv_buf; // 主线程中接收的二进制 msgloopframe 数据
         int m_package_size_send;
         int m_newfd;
         SocketPtr m_sock;
         ThreadPtr m_main_thread;
 
-        // std::vector<char> m_tmp_recv_data;          // checkBufferAndPop 中临时的二进制 msgloopframe【buf copy shared buffer to send thread for deserialization】
-        // std::vector<uint32_t> m_tmp_recv_info;      // 临时的二进制 msgtype
         std::stringstream m_send_ser;               // 序列化结果
         MsgType m_msgtype_buf = MsgType(5);         // msg size, SentOnce, id.first, id.second
         MsgType m_msgtype_container;                // 主线程中接收的二进制 msgtype 数据 msg size, is_update_msg, id.first, id.second, 会进行扩容接收多个消息

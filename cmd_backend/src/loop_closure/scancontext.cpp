@@ -21,8 +21,8 @@ namespace cmd
     /// @param pts_clr_in
     /// @param pts_clr_out
     /// @param tfm_pca_rig
-    inline void align_points_PCA(const std::vector<Eigen::Vector3d> &pts_clr_in,
-                                 std::vector<Eigen::Vector3d> &pts_clr_out,
+    inline void align_points_PCA(const Point3Vector &pts_clr_in,
+                                 Point3Vector &pts_clr_out,
                                  Eigen::Matrix4d &tfm_pca_rig)
     {
         double mx(0), my(0), mz(0);
@@ -90,13 +90,13 @@ namespace cmd
     /// @param signature {out}
     /// @param lidar_range
     /// @param tfm_pca_rig
-    void ScanContext::generate(const std::vector<Eigen::Vector3d> &pts_spherical,
+    void ScanContext::generate(const Point3Vector &pts_spherical,
                                flann::Matrix<float> &ringkey, SigType &signature,
                                double lidar_range, Eigen::Matrix4d &tfm_pca_rig)
     {
 
         // align spherical points by PCA
-        std::vector<Eigen::Vector3d> pts_aligned;
+        Point3Vector pts_aligned;
         align_points_PCA(pts_spherical, pts_aligned, tfm_pca_rig);
 
         // ringkey 保存ring中的点数

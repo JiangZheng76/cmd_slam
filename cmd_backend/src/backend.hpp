@@ -24,6 +24,7 @@ namespace cmd
     class CmdBackend
     {
     public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         CmdBackend();
         void Run();
 
@@ -37,7 +38,7 @@ namespace cmd
         std::vector<AgentHandlerPtr> m_agents;
         MapmanagerPtr m_mapmanager;
         LoopHandlerPtr m_loop;
-        PangolinLoopViewerPtr m_viewer;
+        PangolinViewerPtr m_viewer;
 
         int m_agent_next_id = 0;
 

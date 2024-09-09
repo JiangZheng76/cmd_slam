@@ -1,19 +1,45 @@
 #include "map.hpp"
 #include "loopframe.hpp"
 #include "typedefs_backend.hpp"
+#include "visualization/pangolin_viewer.hpp"
 
 #include "loop_closure/generate_spherical_points.h"
 
 #include "optimization/optimization.hpp"
 
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/inference/Symbol.h>
+
 namespace cmd
 {
 
-    static LoggerPtr g_logger_sys = SYLAR_LOG_NAME("system");
+    static LoggerPtr g_logger_sys = SYLAR_LOG_NAME("CMD-SLAM");
 
-    Map::Map(size_t id)
+    Map::Map(size_t id, PangolinViewerPtr viewer)
         : m_mapId(id), m_mainId(-1)
     {
+        m_viewer = viewer;
+        /**
+         * PCM_MODE
+         */
+        KimeraRPGO::RobustSolverParams params;
+        params.setPcm3DParams(3.0, 0.05, KimeraRPGO::Verbosity::QUIET);
+        params.setMultiRobotAlignMethod(KimeraRPGO::MultiRobotAlignMethod::GNC);
+        params.outlierRemovalMethod = KimeraRPGO::OutlierRemovalMethod::PCM3D;
+        m_pgo.reset(new SE3PcmSolver(params));
+    }
+    bool Map::checkIsNeedOptimize(LoopEdgePtr le){
+        RWMutextType::ReadLock lk(m_mutex);
+        std::pair<int_t,int_t> toID_formID = std::make_pair(le->m_to_lf->m_client_id,le->m_from_lf->m_client_id);
+        if(m_last_opt.find(toID_formID) == m_last_opt.end()){
+            m_last_opt.insert(std::make_pair(toID_formID,le->m_to_lf->m_lf_id));
+            return true;
+        }
+        if(m_last_opt[toID_formID] + 30 < le->m_to_lf->m_lf_id ){
+            m_last_opt[toID_formID] = le->m_to_lf->m_lf_id;
+            return true;
+        }
+        return false;
     }
     bool Map::hasAgent(int client_id)
     {
@@ -37,7 +63,7 @@ namespace cmd
         m_les.insert(le);
     }
 
-    /// @brief 添加帧和 edge
+    /// @brief odom 添加过程中添加新帧
     /// @param lf
     void Map::addLoopframe(LoopframePtr lf)
     {
@@ -62,6 +88,21 @@ namespace cmd
         {
             m_les.insert(*le);
         }
+
+        /**
+         * PCM_MODE
+         */
+        if (m_opt_mode == OptimizationMode::GTSAM_PcmSE3)
+        {
+            LoopEdgeVector pcm_les;
+            for (auto le : lf->m_edges)
+            {
+                pcm_les.push_back(le);
+            }
+            m_pgo->updateByLoopEdge(pcm_les, false);
+        }
+
+        m_viewer->showLoopframes(lf);
     }
     void Map::transformMap(const TransMatrixType &Ttc)
     {
@@ -79,27 +120,91 @@ namespace cmd
 
         // 将fuse 数据都加入到当前的 map 中
         m_les.insert(le);
-        for(auto tmp_le : fuse->m_les){
-            m_les.emplace(tmp_le);
+        for (auto tmp_le : fuse->m_les)
+        {
+            m_les.insert(tmp_le);
         }
-        for(auto tmp_fmgr : fuse->m_fmgrs){
-            m_fmgrs.emplace(tmp_fmgr);
+
+        /**
+         * PCM_MODE
+         */
+        if (m_opt_mode == OptimizationMode::GTSAM_PcmSE3)
+        {
+            LoopEdgeVector pcm_les;
+            pcm_les.push_back(le);
+            for (auto tmp_le : fuse->m_les)
+            {
+                pcm_les.push_back(tmp_le);
+            }
+            m_pgo->updateByLoopEdge(pcm_les, false);
         }
+
+        LoopframeVector update_view_lfs;
+        for (auto tmp_fmgr : fuse->m_fmgrs)
+        {
+            m_fmgrs.insert(tmp_fmgr);
+            for (auto lf : tmp_fmgr.second->m_lfs)
+            {
+                update_view_lfs.push_back(lf.second);
+            }
+        }
+        m_viewer->showLoopframes(update_view_lfs);
     }
     bool Map::updateMapAfterOptimize()
     {
         RWMutextType::WriteLock lk(m_mutex);
+        LoopframeVector updated_lfs;
         for (auto fmgr : m_fmgrs)
         {
             fmgr.second->updateAfterOptimize();
+            for (auto lf : fmgr.second->m_lfs)
+            {
+                updated_lfs.push_back(lf.second);
+            }
         }
+        m_viewer->showLoopframes(updated_lfs);
+    }
+    void Map::updateMapAfterPcmOptimize()
+    {
+        gtsam::Values map_vals;
+        m_pgo->getAllVals(map_vals);
+
+        RWMutextType::WriteLock lk(m_mutex);
+        size_t optimized_cnt = 0;
+        size_t sum_cnt = 0;
+        for (auto fmgr : m_fmgrs)
+        {
+            for (auto plf : fmgr.second->m_lfs)
+            {
+                LoopframePtr lf = plf.second;
+                gtsam::Symbol sym_lf(lf->m_client_id, lf->m_lf_id);
+                if (map_vals.exists(sym_lf))
+                {
+                    gtsam::Pose3 optimized_pose = map_vals.at<gtsam::Pose3>(sym_lf);
+                    lf->m_twc = TransMatrixType(optimized_pose.matrix());
+                    optimized_cnt++;
+                }
+                sum_cnt++;
+            }
+        }
+        SYLAR_LOG_INFO(g_logger_sys) << "优化更新了 " << optimized_cnt << " 关键帧"
+                                     << "，当前 map 的总帧数为 "
+                                     << sum_cnt << "。";
     }
     std::string Map::dump()
     {
         RWMutextType::ReadLock lk(m_mutex);
         std::stringstream ss;
-        ss << "Map frame manager id : {";
-        // TODO
+        ss << "Map INFO "
+           << "[id:" << m_mapId
+           << ",agents: { ";
+        for (auto fm : m_fmgrs)
+        {
+            ss << fm.first << " ";
+        }
+        ss << "}";
+        ss << "]";
+        return ss.str();
     }
     void Map::saveMap()
     {
@@ -123,10 +228,10 @@ namespace cmd
             fmgr.second->m_optimizing = false;
         }
     }
-    std::vector<LoopframePtr> Map::getAllLoopframe()
+    LoopframeVector Map::getAllLoopframe()
     {
         RWMutextType::ReadLock lk(m_mutex);
-        std::vector<LoopframePtr> lfs;
+        LoopframeVector lfs;
         for (auto fmgr : m_fmgrs)
         {
             for (auto lf : fmgr.second->m_lfs)
@@ -136,10 +241,12 @@ namespace cmd
         }
         return lfs;
     }
-    std::vector<LoopEdgePtr> Map::getAllLoopEdge()
+    /// @brief 在sim3 优化的时候使用的
+    /// @return
+    LoopEdgeVector Map::getAllLoopEdge()
     {
         RWMutextType::ReadLock lk(m_mutex);
-        std::vector<LoopEdgePtr> les;
+        LoopEdgeVector les;
         les.reserve(m_les.size());
         for (auto le : m_les)
         {
@@ -231,7 +338,7 @@ namespace cmd
             }
             auto ref_lf = m_lfs[tmp_id];
             lf->addReference(ref_lf, tmp_T_tf, 0, 0);
-            lf->m_twc = ref_lf->m_twc * tmp_T_tf;
+            lf->m_twc = ref_lf->m_twc * tmp_T_tf.inverse();
         }
         m_lfs.insert(std::make_pair(lf->m_lf_id, lf));
     }
@@ -261,7 +368,7 @@ namespace cmd
     }
     void Framemanager::genImiLidarScan(LoopframePtr lf)
     {
-        std::vector<Eigen::Vector3d> pts_spherical;
+        Point3Vector pts_spherical;
         if (m_lidar_range > 0)
         {
             /* ====================== Extract points ================================ */
@@ -305,8 +412,8 @@ namespace cmd
         // TODO
     }
 
-    Mapmanager::Mapmanager(PangolinLoopViewerPtr viewer)
-        :m_viewer(viewer)
+    Mapmanager::Mapmanager(PangolinViewerPtr viewer)
+        : m_viewer(viewer)
     {
         m_thread.reset(new Thread(std::bind(&Mapmanager::Run, this), "map manager"));
     }
@@ -346,6 +453,7 @@ namespace cmd
     /// @return
     bool Mapmanager::addLoopframe(LoopframePtr lf)
     {
+        // SYLAR_LOG_DEBUG(g_logger_sys) << "接收到新 Loopframe\n"<< lf->dump();
         MapPtr tmp_map = nullptr;
         for (auto it = m_maps.begin(); it != m_maps.end(); it++)
         {
@@ -359,7 +467,7 @@ namespace cmd
         }
         if (!tmp_map)
         {
-            tmp_map.reset(new Map(lf->m_client_id));
+            tmp_map.reset(new Map(lf->m_client_id, m_viewer));
             m_maps.insert(tmp_map);
         }
         tmp_map->addLoopframe(lf);
@@ -369,20 +477,26 @@ namespace cmd
     {
         return !m_merge_buf.empty();
     }
+
     void Mapmanager::performMerge()
     {
-        SYLAR_LOG_INFO(g_logger_sys) << "----> Merge maps";
-
-        auto le = m_merge_buf.front();
-        m_merge_buf.pop_front();
+        LoopEdgePtr le;
+        {
+            std::unique_lock<std::mutex> lk(m_mtx_merge_buf);
+            le = m_merge_buf.front();
+            m_merge_buf.pop_front();
+        }
+        
+        
 
         MapPtr map_from = getMap(le->m_from_lf->m_client_id);
         MapPtr map_to = getMap(le->m_to_lf->m_client_id);
 
         if (map_from->m_optimizing || map_to->m_optimizing)
         {
-            SYLAR_LOG_WARN(g_logger_sys) << "maps is optimizing";
+            SYLAR_LOG_DEBUG(g_logger_sys) << "maps is optimizing";
             // 正在优化中，先不执行这些处理
+            std::unique_lock<std::mutex> lk(m_mtx_merge_buf);
             m_merge_buf.push_back(le);
             return;
         }
@@ -392,25 +506,48 @@ namespace cmd
         le->m_to_lf->addConstrant(le);
         if (map_from == map_to)
         {
+
             map_to->addLoopEdge(le);
+            SYLAR_LOG_DEBUG(g_logger_sys) << "\n" << le->m_t_tf.matrix();
+            if(!map_to->checkIsNeedOptimize(le)){
+                return;
+            }
             // TODO 设置优化间隔
-            Optimization::Sim3PoseGraphOptimization(map_to);
-            SYLAR_LOG_INFO(g_logger_sys) << "Preform Optimize.\n"
-                                         << map_from->dump();
+            /**
+             * PCM_MODE
+             */
+            auto mode = map_to->m_opt_mode;
+            // auto mode = 3;
+            switch (mode){
+                case OptimizationMode::GTSAM_PcmSE3:
+                    Optimization::PCMPoseGraphOptimization(map_to, {le});
+                    break;
+                case OptimizationMode::Ceres_Sim3:
+                    Optimization::Sim3PoseGraphOptimization(map_to);    
+                    break;
+                default:
+                    SYLAR_LOG_WARN(g_logger_sys) << "WITHOUT Optimization mode.";
+                    return;
+            }
+            SYLAR_LOG_DEBUG(g_logger_sys) << "Preformed Optimize.  "
+                                          << map_from->dump();
         }
         else
         {
-            SYLAR_LOG_INFO(g_logger_sys) << "\033[1;32m+++ MAP FUSION +++\033[0m";
+            SYLAR_LOG_INFO(g_logger_sys) << "--> MAP FUSION ["
+                                         << le->m_to_lf->m_client_id << "->"
+                                         << le->m_from_lf->m_client_id << "]";
             // TODO 如果其中一个 map 正在优化应该怎么处理？
             map_to->mergeMap(map_from, le, le->m_t_tf);
+            SYLAR_LOG_DEBUG(g_logger_sys) << le->m_t_tf.matrix();
             m_maps.erase(map_from); // 移除旧 map
-            SYLAR_LOG_INFO(g_logger_sys) << "--> MAP FUSION " << le->m_to_lf->m_client_id << "->" << le->m_from_lf->m_client_id << "  SUCCESS. ";
+            SYLAR_LOG_INFO(g_logger_sys) << "<-- MAP FUSION\033[1;32m SUCCESS. \033[0m";
         }
-        SYLAR_LOG_INFO(g_logger_sys) << "----> Merge end.";
     }
     void Mapmanager::createConstrant(LoopframePtr from, LoopframePtr to, TransMatrixType t_tf, precision_t icp_score, precision_t sc_score)
     {
-        LoopEdgePtr le(new LoopEdge(from, to, t_tf, icp_score, sc_score));
+        LoopEdgePtr le(new LoopEdge(from, to, t_tf, icp_score, sc_score, EdgeType::LOOPCLOSURE));
+        std::unique_lock<std::mutex> lk(m_mtx_merge_buf);
         m_merge_buf.push_back(le);
     }
 

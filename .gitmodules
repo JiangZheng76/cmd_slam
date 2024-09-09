@@ -7,3 +7,6 @@
 [submodule "cmd_backend/thrid-party/mysylar"]
 	path = cmd_backend/thrid-party/mysylar
 	url = https://github.com/JiangZheng76/mysylar.git
+[submodule "cmd_backend/thrid-party/Kimera-RPGO"]
+	path = cmd_backend/thrid-party/Kimera-RPGO
+	url = https://github.com/MIT-SPARK/Kimera-RPGO.git

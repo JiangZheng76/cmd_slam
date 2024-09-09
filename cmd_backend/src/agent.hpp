@@ -7,6 +7,7 @@ namespace cmd
     class AgentHandler
     {
     public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         AgentHandler(size_t client_id, SocketPtr sock, MapmanagerPtr mapMgr,LoopHandlerPtr loop);
 
         int_t m_client_id;

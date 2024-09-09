@@ -61,7 +61,7 @@ inline void search_ringkey(const flann::Matrix<float> &ringkey,
 /// @param res_idx {out}
 /// @param res_diff {out}
 inline void search_sc(SigType &signature,
-                      const std::vector<LoopframePtr> &loop_frames,
+                      const LoopframeVector &loop_frames,
                       const std::vector<int> &candidates, int sc_width,
                       int &res_idx, float &res_diff) {
   // candidates[0]在快速检测的时候最相近，所以理论上也是最相近的

@@ -1,16 +1,19 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required (VERSION 2.8)
 project(cmd_comm)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # set(CMAKE_BUILD_TYPE release)
-set(CMAKE_BUILD_TYPE debug)
+set(CMAKE_BUILD_TYPE Release)
 find_package(catkin_simple REQUIRED)
 catkin_simple(ALL_DEPS_REQUIRED)
+set(CMAKE_CXX_STANDARD 17)
 
-
-
-# add_compile_options(-std=c++14 -pthread -pipe -Wall -Wextra -pedantic -Wno-unused-parameter -Wno-unused-function -Wno-vla)
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS "-fPIC")
+add_compile_options(-pthread -pipe 
+-Wall -Wextra -pedantic 
+-Wno-unused-parameter -Wno-unused-function -Wno-vla
+-march=native
+)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  ")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17  ")
 
 # 让目标调用库可以找到头文件
 set(INCLUDE_DIRS
@@ -22,17 +25,20 @@ set(INCLUDE_DIRS
 IF(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE RelWithDebInfo)
 ENDIF()
-
-find_package(Eigen3 3.3.4 EXACT REQUIRED)
+set(EIGEN3_INCLUDE_DIRS /home/sysu/eigen-3.4)
+# find_package(Eigen3 REQUIRED)
 find_package(Sophus REQUIRED)
+find_package(fmt REQUIRED)
 
 find_library(SYLAR mysylar ${PROJECT_SOURCE_DIR}/thrid-party/mysylar/lib/)
 set(LIBS
     ${SYLAR}
     pthread
+    fmt::fmt
 )
 include_directories(
     ${INCLUDE_DIRS}
+    ${EIGEN3_INCLUDE_DIRS}
 )
 
 set(cmd_comm_INCLUDE_DIRS ${INCLUDE_DIRS})

@@ -5,14 +5,14 @@
 
 namespace cmd
 {
-    static LoggerPtr g_logger_sys = SYLAR_LOG_NAME("system");
+    static LoggerPtr g_logger_sys = SYLAR_LOG_NAME("CMD-SLAM");
 
-    Point::Point(const MsgPoint &msg)
+    Point2::Point2(const MsgPoint &msg)
         : m_u(msg.m_u), m_v(msg.m_v), m_idepth_scaled(msg.m_idepth_scaled), m_maxRelBaseline(msg.m_maxRelBaseline), m_idepth_hessian(msg.m_idepth_hessian)
     {
     }
-    LoopEdge::LoopEdge(LoopframePtr from, LoopframePtr to, const TransMatrixType &t_tf, precision_t icp_score, precision_t sc_score)
-        : m_from_lf(from), m_to_lf(to), m_t_tf(t_tf), m_is_added(false), m_icp_score(icp_score), m_sc_score(sc_score)
+    LoopEdge::LoopEdge(LoopframePtr from, LoopframePtr to, const TransMatrixType &t_tf, precision_t icp_score, precision_t sc_score, EdgeType type)
+        : m_from_lf(from), m_to_lf(to), m_t_tf(t_tf), m_is_added(false), m_icp_score(icp_score), m_sc_score(sc_score), m_type(type)
     {
         precision_t dso_error = to->m_dso_error;
         precision_t scale_error = to->m_scale_error;
@@ -33,11 +33,19 @@ namespace cmd
         m_points.reserve(size);
         for (int i = 0; i < size; i++)
         {
-            Point p(msg->m_msg_points[i]);
+            Point2 p(msg->m_msg_points[i]);
             m_points.push_back(p);
         }
         m_ref_id = msg->m_ref_id;
-        m_ref_cf = msg->m_ref_cf;
+        m_ref_cf.clear();
+        for (auto &tcf : msg->m_ref_cf)
+        {
+            m_ref_cf.push_back(TransMatrixType(tcf));
+        }
+
+        m_dso_error = msg->m_dso_error * DSO_ERROR_SCALE;
+        m_scale_error = msg->m_scale_error * SCALE_ERROR_SCALE;
+        m_ab_exposure = msg->m_ab_exposure;
     }
 
     bool Loopframe::isFirstFrame()
@@ -59,7 +67,7 @@ namespace cmd
     }
     void Loopframe::updateFromMsg(MsgLoopframePtr msg)
     {
-        m_twc = msg->m_twc;
+        m_twc = ToOrthogonalTrans(msg->m_twc);
     }
     bool Loopframe::getRef2Cur(TransMatrixType &tcr)
     {
@@ -79,7 +87,8 @@ namespace cmd
         trc = trc.inverse();
         return true;
     }
-    uint64_t Loopframe::getClientMerageKfId(){
+    uint64_t Loopframe::getClientMerageKfId()
+    {
         uint64_t res;
         res |= m_client_id;
         res <<= 32;
@@ -104,23 +113,26 @@ namespace cmd
                 return true;
             }
         }
-        LoopEdgePtr le(new LoopEdge(ref, shared_from_this(), t_tf, icp_score, sc_score));
+        LoopEdgePtr le(new LoopEdge(ref, shared_from_this(), t_tf, icp_score, sc_score, EdgeType::REFERENCE));
         m_edges.push_back(le);
         return true;
     }
     void Loopframe::updateFromCeres()
     {
-        Sophus::Vector7d sim_vec7;
-        for (int i = 0; i < 7; i++)
-        {
-            sim_vec7[i] = m_ceres_pose[i];
-        }
-        Sophus::Sim3d sim = Sophus::Sim3d::exp(sim_vec7);
-        m_twc = TransMatrixType(sim.matrix());
+        EigenMatrix sim_matrix = Sophus::Sim3d::exp(m_ceres_pose).matrix().inverse();
+        m_twc = ToOrthogonalTrans(sim_matrix);
     }
     std::string Loopframe::dump()
     {
-        SYLAR_LOG_INFO(g_logger_sys) << "未定义 loopframe dump()";
+        std::stringstream ss;
+        ss << "Loopframe INFO:\n"
+           << "[lf id: " << m_lf_id
+           << ",client id: " << m_client_id
+           << ",incoming id: " << m_incoming_id
+           << ",timestamp: " << m_timestamp
+           << ",point nums:" << m_points.size()
+           << "]";
+        return ss.str();
     }
 
 }

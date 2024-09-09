@@ -2,7 +2,7 @@
 
 namespace cmd
 {
-    static LoggerPtr g_logger_sys = SYLAR_LOG_NAME("cmd-slam");
+    static LoggerPtr g_logger_sys = SYLAR_LOG_NAME("CMD-SLAM");
 
     CommunicatorBase::CommunicatorBase()
     {
@@ -17,7 +17,7 @@ namespace cmd
     }
     void CommunicatorBase::passDataBundle(DataBundlePtr data)
     {
-        std::unique_lock<std::mutex> lock(m_mtx_out);
+        std::unique_lock<std::mutex> lock(m_mtx_datas_out);
         m_buf_datas_out.push_back(data);
     }
     void CommunicatorBase::lock()
@@ -41,8 +41,8 @@ namespace cmd
     /// @param lf
     void CommunicatorBase::serialize(MsgLoopframePtr lf)
     {
+        m_send_ser.str("");
         m_send_ser.clear();
-
         cereal::BinaryOutputArchive oarchive(m_send_ser); // 设置序列化目的地
         oarchive(*lf);
         m_package_size_send = (int)m_send_ser.str().length();
@@ -76,14 +76,9 @@ namespace cmd
     /// @return 发送的大小
     int CommunicatorBase::sendAll(MsgType &msg_send)
     {
-
         int len = msg_send.size();
-        ByteArrayPtr buf(new ByteArray(len + 1));
-        buf->write(&msg_send[0], len * sizeof(msg_send[0]));
-
-        size_t byte_left = buf->getSize();
-        // SocketStream ss(m_sock,false);
-        int rt = write(buf, byte_left);
+        size_t byte_left = len * sizeof(msg_send[0]);
+        int rt = write(&msg_send[0], byte_left);
         return rt;
     }
     /// @brief 先发送 MsgType 信息，再发送 msg package
@@ -159,7 +154,7 @@ namespace cmd
     /// @brief 接收数据的线程
     void CommunicatorBase::recvMsg()
     {
-        SYLAR_LOG_INFO(g_logger_sys) << "----> Start Recv Thread";
+        SYLAR_LOG_INFO(g_logger_sys) << "--> Start Recv Thread";
         size_t total_msg = 0;
         m_msgtype_container.resize(ContainerSize * 5);
         size_t type_size = sizeof(m_msgtype_container[0]) * ContainerSize * 5;
@@ -168,16 +163,15 @@ namespace cmd
             // ？？？ 不是很懂，一次性收了这么多不会污染后面的 msgloopframe 么？（发送的时候也是一次性发送 10 个 msgtype，不够补 0）
             if (recvAll(type_size, m_msgtype_container))
             {
-                SYLAR_LOG_INFO(g_logger_sys) << "----> Exit Recv Thread";
+                SYLAR_LOG_INFO(g_logger_sys) << "--> Exit Recv Thread";
                 setFinish();
                 break;
             }
-
             // 大小为 1 ，接受到 client id
             if (m_msgtype_container[0] == 1)
             {
                 m_client_id = m_msgtype_container[1];
-                SYLAR_LOG_INFO(g_logger_sys) << "--> Set Client ID: " << m_client_id << std::endl;
+                SYLAR_LOG_INFO(g_logger_sys) << "--> Set Client ID: " << m_client_id;
                 m_msgtype_container[0] = 0; // 长度为 0 ，后面不再处理
             }
 
@@ -187,6 +181,7 @@ namespace cmd
             {
                 total_msg += m_msgtype_container[i * 5];
             }
+            std::unique_lock<std::mutex> lk(m_mtx_recv_buf);
             m_recv_buf.clear(); // 每一次接收前都要重置
             if (recvAll(total_msg, m_recv_buf))
             {
@@ -209,7 +204,7 @@ namespace cmd
         MsgType tmp_msgtype(5);
 
         // 读取 msgtype
-        std::unique_lock<std::mutex> lk(m_mtx_recv_buffer);
+        std::unique_lock<std::mutex> lk(m_mtx_recv_data_info);
         for (int i = 0; i < ContainerSize; i++)
         {
             if (m_msgtype_container[i * 5] == 0)
@@ -240,7 +235,7 @@ namespace cmd
     /// @return
     bool CommunicatorBase::checkBufferAndPop()
     {
-        std::unique_lock<std::mutex> lk(m_mtx_recv_buffer);
+        std::unique_lock<std::mutex> lk(m_mtx_recv_data_info);
 
         if (!m_buf_recv_data.empty())
         {
@@ -260,7 +255,9 @@ namespace cmd
     {
         size_t info_bytes = sendAll(msg.msg_info);
         size_t data_bytes = sendAll(msg.msg_data);
-
+        // SYLAR_LOG_DEBUG(g_logger_sys) << "sendMsgContainer() send data_bytes: "
+        //                               << data_bytes << " bytes and info_bytes "
+        //                               << info_bytes << " bytes";
         return data_bytes;
     }
 
@@ -268,9 +265,9 @@ namespace cmd
     void CommunicatorBase::processBufferOut()
     {
         size_t cnt = 0; // 限定每次只发送 5 帧
-        std::list<MessageContainerPtr> mcts;
+        MessageContainerList mcts;
         {
-            std::unique_lock<std::mutex> lock(m_mtx_out);
+            std::unique_lock<std::mutex> lock(m_mtx_datas_out);
             while (cnt < 5 && !m_buf_datas_out.empty())
             {
                 DataBundlePtr db = m_buf_datas_out.front();
@@ -312,17 +309,19 @@ namespace cmd
     /// @brief 处理接收到的数据
     void CommunicatorBase::processBufferIn()
     {
-        std::unique_lock<std::mutex> lk(m_mtx_in);
         size_t cnt = 0; // 限定每次只接收 5 帧
         while (cnt < 5 && checkBufferAndPop())
         {
             std::stringstream tmp_data;
             MsgType tmp_info;
             {
-                std::unique_lock<std::mutex> lk(m_mtx_recv_buffer);
+                std::unique_lock<std::mutex> lk(m_mtx_recv_data_info);
                 // 将接收到的写到字节流中
-                tmp_data.write(&m_buf_recv_data.front()[0], m_buf_recv_data.front().size());
+                size_t len = m_buf_recv_data.front().size();
+                tmp_data.write(&m_buf_recv_data.front()[0], len);
                 m_buf_recv_data.pop_front();
+                // SYLAR_LOG_DEBUG(g_logger_sys) << "recv " << len << " bytes loopframe msg.";
+
                 // 获取 msginfo
                 tmp_info = m_buf_recv_info.front();
                 m_buf_recv_info.pop_front();
@@ -336,8 +335,11 @@ namespace cmd
                 if (tmp_info[4] == 0)
                 {
                     // loopframe
+                    std::unique_lock<std::mutex> lk(m_mtx_msg_in);
                     iarchive(*msg);
+                    // 保证 id 顺序增长
                     m_buf_msg_in.push_back(msg);
+                    // SYLAR_LOG_DEBUG(g_logger_sys) << "接收新 message\n"<< msg->dump();
                 }
                 else
                 {

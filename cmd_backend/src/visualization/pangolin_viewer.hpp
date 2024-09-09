@@ -24,11 +24,10 @@
 // This file is modified from <https://github.com/JakobEngel/dso>
 
 #pragma once
-#include "boost/thread.hpp"
-#include <deque>
 #include <map>
-#include <pangolin/pangolin.h>
 #include <queue>
+#include <deque>
+#include <pangolin/pangolin.h>
 
 #include "agent_display.hpp"
 #include "loopframe_display.hpp"
@@ -37,16 +36,17 @@ namespace cmd
 {
 
     // class LoopframeDisplay;
-    struct VisColorRGB {
+    struct VisColorRGB
+    {
     public:
-        VisColorRGB(float fR,float fG, float fB)
-            : mfR(fR),mfG(fG),mfB(fB),
-            mu8R((u_int8_t)(fR*255)),mu8G((u_int8_t)(fG*255)),mu8B((u_int8_t)(fB*255))
-            {}
-        
+        VisColorRGB(float fR, float fG, float fB)
+            : mfR(fR), mfG(fG), mfB(fB),
+              mu8R((u_int8_t)(fR * 255)), mu8G((u_int8_t)(fG * 255)), mu8B((u_int8_t)(fB * 255))
+        {
+        }
 
-        const float mfR,mfG,mfB;
-        const u_int8_t mu8R,mu8G,mu8B;
+        const float mfR, mfG, mfB;
+        const u_int8_t mu8R, mu8G, mu8B;
     };
 
     class PangolinViewer
@@ -60,61 +60,31 @@ namespace cmd
         void close();
         // ==================== Output3DWrapper Functionality ======================
 
-        void publishKeyframes(LoopframePtr lf, bool final = true);
-        void publishKeyframes(const std::vector<LoopframePtr> &lfs, bool final = true);
-
-        virtual void join();
+        void showLoopframes(LoopframePtr lf);
+        void showLoopframes(const LoopframeVector &lfs);
 
         void updateDisplay();
-        std::vector<float> getColors();
-
-    private:
-        void modifyKeyframePoseByKFID(uint32_t client_id, uint32_t kf_id,
-                                      const TransMatrixType &tfm_w_c);
-        void passToUpdateBuf(LoopframeDisplayPtr lf);
-        void passToUpdateBuf(const std::vector<LoopframeDisplayPtr> &lfs);
-
+        void getColors(std::vector<float>& color);
     private:
         int colors_index_ = 0;
 
         ThreadPtr m_view_thread;
-        bool running_;
-        int w_, h_;
-        size_t agents_num;
+        bool m_running;
+        int m_w, m_h;
 
         // 3D model rendering
-        boost::mutex model_3d_mutex_;
-        std::vector<LoopframeDisplayPtr> keyframes_;
-
-        // 是否需要更新agent信息的标识
-        bool need_to_update_bound_ = true;
-        // 记录已经发送的帧ID
-        std::map<uint64_t, LoopframeDisplayPtr> keyframes_by_client_and_kid_;
-
-        std::unordered_map<uint32_t,AgentDisplayPtr> agdmap_;
-        MapmanagerPtr mapMgr_;
+        std::mutex m_model_3d_mutex;
+        std::unordered_map<uint32_t, AgentDisplayPtr> m_agent_displays;
 
         // 更新buf
-        std::mutex update_loopframe_buf_mtx_;
-        std::queue<LoopframeDisplayPtr> update_loopframe_buf_; // 【锁】
-
-        // lidar rendering
-        boost::mutex model_lidar_mutex_;
-        std::vector<Eigen::Vector3d> lidar_pts_;
-        size_t lidar_cur_sz_;
-
-        // images rendering
-        boost::mutex open_images_mutex_;
-        // MinimalImageB3 *internal_kf_img_;
-        bool kf_img_changed_;
+        std::mutex m_update_loopframe_buf_mtx;
+        std::queue<LoopframePtr> m_update_loopframe_buf; // 【锁】
 
         // colors
-        std::vector<VisColorRGB> pgl_colors_;
+        std::vector<VisColorRGB> m_pgl_colors;
 
         // main view
-        pangolin::View Visualization3D_display;
-
-        uint32_t agent_id = 0;
+        pangolin::View m_view;
     };
 
 } // namespace dso

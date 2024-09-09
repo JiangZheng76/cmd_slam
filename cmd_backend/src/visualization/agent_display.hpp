@@ -8,69 +8,34 @@
  */
 #ifndef __AGENTDISPLAY_H__
 #define __AGENTDISPLAY_H__
-
 #include "typedefs_backend.hpp"
 #include "pangolin/pangolin.h"
+#include "loopframe_display.hpp"
 namespace cmd
 {
-        class AgentDisplay
-        {
-        public:
-            AgentDisplay(uint32_t client_id, float w, float h, std::vector<float> color);
+    class AgentDisplay
+    {
+    public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+        AgentDisplay(uint32_t client_id, std::vector<float> color);
 
-            using LoopFrameDisplayMap = std::map<uint32_t, LoopframeDisplayPtr>;
 
-            void insertLoopFrame(LoopframeDisplayPtr lfd);
+        void drawLidar();
+        void drawLoopFrames();
+        void drawConstraints();
+        void addLoopframe(LoopframePtr lf);
+        
+    public:
+        uint32_t m_client_id;
 
-            void updateLoopFrame(LoopframePtr lf);
+        std::vector<float> m_color;
+        std::unordered_map<int_t, LoopframeDisplayPtr> m_displays;
+        std::list<LoopframeDisplayPtr> m_list_displays;
+        
+        Point3Vector m_lidar_pts;
 
-            // LoopframeDisplayPtr getLF(uint32_t kf_id);
-
-            void addNewLoopFrame(uint32_t kf_id, LoopframeDisplayPtr lfd);
-
-            void activeAndDrawDisplay();
-
-            void setDisplayBounds(float l, float r, float b, float t);
-
-            void refreshLoopFrames();
-
-            void drawLoopFrames();
-
-            void drawConstraints(std::vector<float> colors);
-
-            void drawCurlidar();
-
-            void refreshCurlidar(const std::vector<Eigen::Vector3d> &pts, size_t cur_sz);
-            //
-            void createLidarDisplay(float ratio, pangolin::OpenGlRenderState &Visualization_lidar_camera);
-
-        private:
-            uint32_t client_id_;
-
-            // 这个用于display
-            std::mutex loopframes_mtx_;
-            std::list<LoopframeDisplayPtr> loopframes_;
-            // 这个用于修改
-            LoopFrameDisplayMap lfdmap_;
-
-            float ratio_;
-            float w_;
-            float h_;
-            std::mutex pts_cur_lidar_mtx_;
-            std::vector<Eigen::Vector3d> pts_cur_lidar_;
-            size_t lidar_cur_sz_;
-
-            // 显示模块
-            pangolin::View agentView_;
-            pangolin::View agent_lidar_dispaly_;
-            pangolin::View agent_trace_display_;
-
-            pangolin::OpenGlRenderState agent_view_camera_;
-
-            std::vector<float> color_;
-
-            uint32_t s_kf_id = 0;
-        };
+        std::mutex m_mtx_display;
+    };
 
 }
 #endif

@@ -3,16 +3,16 @@
 #include "map.hpp"
 
 #include "agent.hpp"
-#include "visualization/codsv_visual/PangolinLoopViewer.h"
+#include "visualization/pangolin_viewer.hpp"
 
 namespace cmd
 {
 
-    static LoggerPtr g_logger_sys = SYLAR_LOG_NAME("system");
+    static LoggerPtr g_logger_sys = SYLAR_LOG_NAME("CMD-SLAM");
 
     CmdBackend::CmdBackend()
-    {   
-        m_viewer.reset(new PangolinLoopViewer(VIEWER_WIDTH,VIEWER_HIGH));
+    {
+        m_viewer.reset(new PangolinViewer(VIEWER_WIDTH, VIEWER_HIGH));
         m_mapmanager.reset(new Mapmanager(m_viewer));
         m_loop.reset(new LoopHandler(LIDAR_RANGE, SCANCONTEXT_THRES, m_mapmanager));
         // 开启等待任务线程
@@ -43,7 +43,10 @@ namespace cmd
         }
 
         m_sock->listen();
-        m_sock->dump(std::cout);
+        std::stringstream ss_sock;
+        m_sock->dump(ss_sock);
+        SYLAR_LOG_INFO(g_logger_sys) << "创建监听 socket "
+                                     << ss_sock.str();
     }
     int CmdBackend::get_counter()
     {
@@ -59,7 +62,7 @@ namespace cmd
             if (!comm_sock)
             {
                 SYLAR_LOG_ERROR(g_logger_sys) << "accept socket error.";
-                comm_sock->dump(std::cout);
+                // comm_sock->dump(std::cout);
                 continue;
             }
             AgentHandlerPtr agent(new AgentHandler(get_counter(), comm_sock, m_mapmanager, m_loop));

@@ -1,6 +1,7 @@
 #pragma once 
 
 #include "cmd_comm.hpp"
+#include <Eigen/Core>
 namespace cmd {
 
     class FrontEndComm;

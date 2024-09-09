@@ -27,9 +27,9 @@
 
 #include "typedefs_backend.hpp"
 // #define ICP_THRES 1.5
-
+using namespace cmd;
 inline pcl::PointCloud<pcl::PointXYZ>
-transformPoints(const std::vector<Eigen::Vector3d> &pts_input,
+transformPoints(const Point3Vector &pts_input,
                 const Eigen::Matrix4d T)
 {
     pcl::PointCloud<pcl::PointXYZ> pc_output;
@@ -52,19 +52,14 @@ transformPoints(const std::vector<Eigen::Vector3d> &pts_input,
     return pc_output;
 }
 
-inline bool icp(const std::vector<Eigen::Vector3d> &pts_source,
-                const std::vector<Eigen::Vector3d> &pts_target,
+inline bool icp(const Point3Vector &pts_source,
+                const Point3Vector &pts_target,
                 Eigen::Matrix4d &tfm_target_source, float &icp_score)
 {
 
     Eigen::Matrix4d I4;
     I4.setIdentity();
 
-    // auto pc_target_ptr = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>(
-    //     transformPoints(pts_target, I4));
-    // auto pc_target_source_ptr =
-    //     boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>(
-    //         transformPoints(pts_source, tfm_target_source));
     auto pc_target_ptr =
         pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>(
             transformPoints(pts_target, I4)));
@@ -72,14 +67,18 @@ inline bool icp(const std::vector<Eigen::Vector3d> &pts_source,
         pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>(
             transformPoints(pts_source, tfm_target_source)));
     pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
-    icp.setMaximumIterations(ICP_ITERA_TIME);
-    icp.setTransformationEpsilon(ICP_TRANS_EPSILON); // orginal 0.01
-    icp.setEuclideanFitnessEpsilon(ICP_EUC_EPSILON);
-
-    // 设置最大匹配距离阈值
+    icp.setMaximumIterations(5);
+    icp.setTransformationEpsilon(0.01);
     icp.setMaxCorrespondenceDistance(2);
+    icp.setRANSACOutlierRejectionThreshold(0.5);
 
-    icp.setRANSACOutlierRejectionThreshold(0.3);
+    // icp.setMaximumIterations(ICP_ITERA_TIME);
+    // icp.setTransformationEpsilon(ICP_TRANS_EPSILON); // orginal 0.01
+    // icp.setEuclideanFitnessEpsilon(ICP_EUC_EPSILON);
+    // // 设置最大匹配距离阈值
+    // icp.setMaxCorrespondenceDistance(2);
+
+    // icp.setRANSACOutlierRejectionThreshold(0.3);
 
     icp.setInputSource(pc_target_source_ptr);
     icp.setInputTarget(pc_target_ptr);
@@ -89,6 +88,6 @@ inline bool icp(const std::vector<Eigen::Vector3d> &pts_source,
         icp.getFinalTransformation().cast<double>() * tfm_target_source;
 
     icp_score = icp.getFitnessScore();
-    printf("icp: %5.2f ", icp_score);
+    // printf("icp: %5.2f ", icp_score);
     return icp_score < ICP_THRES;
 }

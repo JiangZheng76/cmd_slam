@@ -16,6 +16,7 @@ namespace cmd
     class LoopHandler
     {
     public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         LoopHandler(float lidar_range, float scan_context_thres,
                     MapmanagerPtr mapMgr);
         ~LoopHandler();
@@ -32,9 +33,9 @@ namespace cmd
 
         // buff
         MutextType m_mtx_buf_lf;
-        std::list<LoopframePtr> m_buf_lfs; // LoopHandler 中新加入待处理的 LF
+        LoopframeList m_buf_lfs; // LoopHandler 中新加入待处理的 LF
 
-        std::vector<LoopframePtr> m_preocessed_lf; // 所有回环处理过的帧，所有帧，包括不是顶点的帧 下标和 scancontext 相同
+        LoopframeVector m_preocessed_lf; // 所有回环处理过的帧，所有帧，包括不是顶点的帧 下标和 scancontext 相同
 
         // loop detection by ScanContext
         float m_lidar_range;
@@ -43,7 +44,7 @@ namespace cmd
         ScanContextPtr m_sc; // scanContext的处理器
 
         MapmanagerPtr m_mapMgr; // 用来存储所有帧，并处理帧合并的问题，知道那几个帧是在同一个地图上的
-        PangolinLoopViewerPtr m_viewer;
+        PangolinViewerPtr m_viewer;
     };
 
 } // namespace dso
