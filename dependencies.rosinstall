@@ -1,0 +1,46 @@
+# NOTE: This is an example source dependency, remove it before adding the
+# dependencies.rosinstall file to your repository.
+#
+# The 'wstool' utility is the preferred way of adding elements to this file. To
+# add all repositories from an existing workspace, you can use `wstool scrape`.
+
+- git:
+    local-name: catkin_simple
+    uri: https://github.com/catkin/catkin_simple.git
+
+- git:
+    local-name: eigen_catkin
+    uri: https://github.com/ethz-asl/eigen_catkin.git
+
+- git:
+    local-name: eigen_checks
+    uri: https://github.com/ethz-asl/eigen_checks.git
+
+- git:
+    local-name: pangolin
+    uri: https://github.com/stevenlovegrove/Pangolin.git
+    version: b8abe866819b343a4d50d062c494e4357e4a9aa4
+
+- git:
+    local-name: Sophus
+    uri: https://github.com/strasdat/Sophus.git
+
+- git:
+    local-name: fmt
+    uri: https://github.com/fmtlib/fmt.git
+
+- git:
+    local-name: mysylar
+    uri: https://github.com/JiangZheng76/mysylar.git
+
+- git:
+    local-name: ceres_catkin
+    uri: https://github.com/ethz-asl/ceres_catkin.git
+
+- git:
+    local-name: opengv
+    uri: https://github.com/laurentkneip/opengv.git
+
+- git:
+    local-name: pcl
+    uri: https://github.com/PointCloudLibrary/pcl.git
