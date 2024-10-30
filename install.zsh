@@ -119,3 +119,6 @@ cd $CMD_WS/src
 source /opt/ros/melodic/setup.bash
 catkin build cmd_comm
 catkin build cmd_backend
+
+cd $CMD_WS/src/frontend_dsv_slam
+bash install.zsh
