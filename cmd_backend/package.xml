@@ -15,6 +15,7 @@
     <depend>eigen_catkin</depend>
     <depend>cmd_comm</depend>
     <depend>yaml-cpp</depend>
+    <!-- <depend>ceres_catkin</depend> -->
 
     <export></export>
 </package>

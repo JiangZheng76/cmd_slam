@@ -12,8 +12,8 @@
 #include <log.h>
 #include <address.h>
 #include <bytearray.h>
-#include <socket_stream.h>
-#include <thread.hh>
+#include <streams/socket_stream.h>
+#include <thread.h>
 // using namespace mysylar;
 namespace cmd
 {

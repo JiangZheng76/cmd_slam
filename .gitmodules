@@ -7,3 +7,6 @@
 [submodule "cmd_backend/thrid-party/mysylar"]
 	path = cmd_backend/thrid-party/mysylar
 	url = https://github.com/JiangZheng76/mysylar.git
+[submodule "frontend_dsv_slam"]
+	path = frontend_dsv_slam
+	url = git@github.com:JiangZheng76/frontend_dsv_slam.git

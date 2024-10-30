@@ -34,8 +34,8 @@
     uri: https://github.com/JiangZheng76/mysylar.git
 
 - git:
-    local-name: ceres_catkin
-    uri: https://github.com/ethz-asl/ceres_catkin.git
+    local-name: ceres-solver
+    uri: https://github.com/ceres-solver/ceres-solver.git
 
 - git:
     local-name: opengv
@@ -44,3 +44,15 @@
 - git:
     local-name: pcl
     uri: https://github.com/PointCloudLibrary/pcl.git
+
+- git:
+    local-name: glog
+    uri:  https://github.com/google/glog.git
+    
+- git:
+    local-name: opencv3_catkin
+    uri:  https://github.com/ethz-asl/opencv3_catkin.git
+
+
+    
+

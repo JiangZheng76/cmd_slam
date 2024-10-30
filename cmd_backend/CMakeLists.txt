@@ -21,6 +21,8 @@ find_package(Ceres REQUIRED)
 find_package(PCL 1.13 REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(Pangolin REQUIRED)
+find_package(OpenSSL REQUIRED)
+find_package(OpenCV REQUIRED)
 find_package(Eigen3 3.3.4 EXACT REQUIRED)
 
 include_directories(
@@ -30,12 +32,16 @@ include_directories(
 )
 set(LIBS
     fmt
+    dl
+    z
     pthread
     yaml-cpp
+    ${OPENSSL_LIBRARIES}
     ${PCL_LIBRARIES}
     ${CERES_LIBRARIES}
     ${catkin_LIBRARIES} # mysyalr 的库在 cmd_comm 中已经定义了路径了
     ${Pangolin_LIBRARIES}
+    ${OpenCV_LIBRARIES}
 )
 
 set(BACKEND_SOURCE_FILES
@@ -55,8 +61,8 @@ set(BACKEND_SOURCE_FILES
     src/visualization/codsv_visual/PangolinLoopViewer.cpp
 )
 
-cs_add_library(cmd_backend ${BACKEND_SOURCE_FILES})
+add_library(cmd_backend ${BACKEND_SOURCE_FILES})
 target_link_libraries(cmd_backend ${LIBS} )
 
-cs_add_executable(cmd_backend_node cmd_sys/cmd_backend_node.cpp)
+add_executable(cmd_backend_node cmd_sys/cmd_backend_node.cpp)
 target_link_libraries(cmd_backend_node cmd_backend ${LIBS})

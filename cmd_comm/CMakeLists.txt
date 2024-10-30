@@ -25,11 +25,25 @@ ENDIF()
 
 find_package(Eigen3 3.3.4 EXACT REQUIRED)
 find_package(Sophus REQUIRED)
+find_package(OpenSSL REQUIRED)
 
-find_library(SYLAR mysylar ${PROJECT_SOURCE_DIR}/thrid-party/mysylar/lib/)
-set(LIBS
-    ${SYLAR}
+
+# 编译 mysylar
+add_subdirectory(${PROJECT_SOURCE_DIR}/thrid-party/mysylar)
+# ??? 所以每一层都需要加上 需要链接的包才可以么？在最后一层加是不行的
+set(SYLAR_LIBS
+    fmt
+    dl
+    z
     pthread
+    yaml-cpp
+    ${OPENSSL_LIBRARIES}
+)
+set(LIBS
+    # ${SYLAR}
+    mysylar
+    pthread
+    ${SYLAR_LIBS}
 )
 include_directories(
     ${INCLUDE_DIRS}
