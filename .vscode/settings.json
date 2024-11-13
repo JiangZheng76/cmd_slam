@@ -85,7 +85,8 @@
         "core": "cpp",
         "numericaldiff": "cpp",
         "sparsecore": "cpp",
-        "*.ipp": "cpp"
+        "*.ipp": "cpp",
+        "nonlinearoptimization": "cpp"
     },
     "cmake.sourceDirectory": "/home/sysu/cmd_ws/src/cmd-slam/cmd_backend/thrid-party/mysylar/thrid-party/yaml-cpp/test/gtest-1.11.0/googletest",
     "ros.distro": "noetic",

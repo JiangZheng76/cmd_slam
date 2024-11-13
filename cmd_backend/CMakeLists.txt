@@ -6,15 +6,14 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug)
 endif()
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -march=native")
 set(CMAKE_CXX_STANDARD 17)
-add_compile_options(
-    -pthread -pipe -Wall -Wextra -pedantic 
-    -Wno-unused-parameter -Wno-unused-function -Wno-vla
-    -march=native
-)
-
-# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  ")
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17  ")
+# add_compile_options(
+#     -pthread -pipe -Wall -Wextra -pedantic 
+#     -Wno-unused-parameter -Wno-unused-function -Wno-vla
+#     -march=native
+# )
 IF(NOT CMAKE_BUILD_TYPE)
 #   set(CMAKE_BUILD_TYPE RelWithDebInfo)
   set(CMAKE_BUILD_TYPE Debug)
@@ -48,17 +47,19 @@ set(GTSAM_INCLUDE_DIR /home/sysu/gtsam)
 set(GTSAM_LIB /home/sysu/gtsam/build/gtsam/libgtsam.so.4.3a0)
 message(${GTSAM_INCLUDE_DIR})
 
-set(PCM_PATH /home/sysu/cmd_ws/src/cmd-slam/cmd_backend/thrid-party/Kimera-RPGO)
+# set(PCM_PATH /home/sysu/cmd_ws/src/cmd-slam/cmd_backend/thrid-party/Kimera-RPGO)
+add_subdirectory(thrid-party/Kimera-RPGO)
 find_library(PCM_LIBRARY KimeraRPGO ${PCM_PATH}/build)
+
 set(PCM_INCLUDE_DIRS ${PCM_PATH}/include())
 
 include_directories(
     ${PCM_INCLUDE_DIRS}
-    src
     ${PCL_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIRS}
     ${GTSAM_INCLUDE_DIR}
     ${PROJECT_SOURCE_DIR}/src
+    ${PROJECT_SOURCE_DIR}/thrid-party/Kimera-RPGO/include
     ${cmd_comm_INCLUDE_DIRS} # 只使用 cmd_comm, sylar 已经包含在了 cmd_comm 中
 )
 set(LIBS

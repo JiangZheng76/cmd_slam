@@ -16,7 +16,7 @@ namespace cmd
     /// @return 返回是否优化 is_optimize
     void SE3PcmSolver::convertLoopEdge2Factor(LoopEdgeVector &les, gtsam::NonlinearFactorGraph &tmp_nfg, gtsam::Values &tmp_est)
     {
-        // 参数噪声
+        // 参数噪声 // ??? 参数噪声有什作用呢？增加不确定性的考虑
         static const gtsam::SharedNoiseModel &noise =
             gtsam::noiseModel::Isotropic::Variance(6, 0.1);
 
@@ -38,29 +38,35 @@ namespace cmd
 
             gtsam::Pose3 from_pos = gtsam::Pose3(from->m_twc.matrix());
             gtsam::Pose3 to_pos = gtsam::Pose3(to->m_twc.matrix());
-
-            tmp_est.insert(sym_from, from_pos);
-            tmp_est.insert(sym_to, to_pos);
+            // 防止插入重复的顶点
+            if(!tmp_est.exists(sym_from)){
+                tmp_est.insert(sym_from, from_pos);
+            }
+            if(!tmp_est.exists(sym_to)){
+                tmp_est.insert(sym_to, to_pos);
+            }
             // TODO 为什么需要先验噪声？ 设置优化边的可信度
             gtsam::Pose3 T_tf_pos = gtsam::Pose3(le->m_t_tf.matrix());
             tmp_nfg.add(gtsam::BetweenFactor<gtsam::Pose3>(sym_from, sym_to, T_tf_pos, noise));
         }
     }
-
+    /// @brief 放入约束边，判断是否需要执行优化
+    /// @param les 需要添加的约束边 
+    /// @param is_optimize 只有添加回环边的时候才会为 true 进行优化
     void SE3PcmSolver::updateByLoopEdge(LoopEdgeVector &les,bool is_optimize)
     {
         gtsam::NonlinearFactorGraph new_factors;
-        gtsam::Values new_vals;
-        convertLoopEdge2Factor(les,new_factors,new_vals);
+        gtsam::Values new_vals; // value = [key,pose]
+        convertLoopEdge2Factor(les,new_factors,new_vals); // 将回环边factor 提取出来
         for(auto val : new_vals){
             gtsam::Pose3 optimized_pose = new_vals.at<gtsam::Pose3>(val.key);
             SYLAR_LOG_DEBUG(g_logger_sys) << val.key << " " << optimized_pose;
         }
-        size_t size = new_factors.size();
-        for(size_t i=0;i<size ;i++){
-            SYLAR_LOG_DEBUG(g_logger_sys) << new_factors[i];
-        }
-        // 更新回环边,is_optimize判断是否启动更新
+        // size_t size = new_factors.size();
+        // for(size_t i=0;i<size ;i++){
+        //     SYLAR_LOG_DEBUG(g_logger_sys) << new_factors[i];
+        // }
+        // 更新位姿图,is_optimize判断是否启动更新
         update(new_factors,new_vals,is_optimize);
     }
     void SE3PcmSolver::getAllVals(gtsam::Values& vals){

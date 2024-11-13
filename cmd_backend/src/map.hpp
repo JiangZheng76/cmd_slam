@@ -34,7 +34,8 @@ namespace cmd
         std::unique_ptr<SE3PcmSolver> m_pgo;
 
 
-        OptimizationMode m_opt_mode = OptimizationMode::Ceres_Sim3;
+        // OptimizationMode m_opt_mode = OptimizationMode::Ceres_Sim3;
+        OptimizationMode m_opt_mode = OptimizationMode::GTSAM_PcmSE3;
         std::map<std::pair<int_t,int_t>,int_t> m_last_opt;
 
         RWMutextType m_mutex;

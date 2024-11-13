@@ -18,7 +18,6 @@ public:
     void updateByLoopEdge(LoopEdgeVector &les,bool is_optimize);
 
     void getAllVals(gtsam::Values& vals);
-
 };
 
 

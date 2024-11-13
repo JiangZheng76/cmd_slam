@@ -5,7 +5,7 @@
 #include "typedefs_backend.hpp"
 namespace cmd
 {
-    // 辅助 map 更改状态
+    // 辅助 map 更改优化状态
     class MapOptimizationWrap
     {
     public:
