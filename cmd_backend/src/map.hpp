@@ -3,13 +3,13 @@
 #include "cmd_comm.hpp"
 #include "typedefs_backend.hpp"
 
-#include "pcm/pcm_solver.hpp"
+#include "optimization/pcm_pgo/pcm_solver.hpp"
 
 namespace cmd
 {
     enum OptimizationMode{
-        Ceres_Sim3 = 0,
-        GTSAM_PcmSE3 = 1
+        CERES_SIM3 = 0,
+        PCM_OUTLIER = 1
     };
 
     class Map
@@ -31,11 +31,11 @@ namespace cmd
         /**
          * PCM_MODE
          */
-        std::unique_ptr<SE3PcmSolver> m_pgo;
+        std::unique_ptr<PcmSolver> solver_;
 
 
-        // OptimizationMode m_opt_mode = OptimizationMode::Ceres_Sim3;
-        OptimizationMode m_opt_mode = OptimizationMode::GTSAM_PcmSE3;
+        // OptimizationMode m_opt_mode = OptimizationMode::CERES_SIM3;
+        OptimizationMode m_opt_mode = OptimizationMode::PCM_OUTLIER;
         std::map<std::pair<int_t,int_t>,int_t> m_last_opt;
 
         RWMutextType m_mutex;
@@ -112,8 +112,8 @@ namespace cmd
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         std::set<MapPtr> m_maps;
-        std::mutex m_mtx_merge_buf; // from -> to
-        LoopEdgeList m_merge_buf; // from -> to
+        std::mutex m_mtx_lc_buf; // from -> to
+        LoopEdgeList m_lc_buf; // from -> to
         bool m_runing = true;
         ThreadPtr m_thread;
         PangolinViewerPtr m_viewer; // TODO 还没有发送帧
@@ -126,8 +126,8 @@ namespace cmd
         MapPtr getMap(int_t clientId);
         bool addLoopframe(LoopframePtr lf);
 
-        bool checkMerageBuf();
-        void performMerge();
+        bool checkLoopclosureBuf();
+        void processLoopClosures();
         void createConstrant(LoopframePtr from, LoopframePtr to, TransMatrixType t_tf, precision_t icp_score, precision_t sc_score);
     };
 }

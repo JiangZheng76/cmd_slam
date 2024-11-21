@@ -87,12 +87,12 @@ namespace cmd
 
     void Optimization::PCMPoseGraphOptimization(MapPtr map, LoopEdgeVector les)
     {
-        SYLAR_ASSERT2(map->m_opt_mode == OptimizationMode::GTSAM_PcmSE3, "OptimizationMode is : " + map->m_opt_mode);
+        SYLAR_ASSERT2(map->m_opt_mode == OptimizationMode::PCM_OUTLIER, "OptimizationMode is : " + map->m_opt_mode);
 
         SYLAR_LOG_INFO(g_logger_sys) << "--> PCM PGO START ";
         MapOptimizationWrap map_wrap(map);
 
-        map->m_pgo->updateByLoopEdge(les, true); // 启动优化
+        map->solver_->insertLoopEdgeAndUpdate(les, true); // 启动优化
         map->updateMapAfterPcmOptimize();        // 更新数据
         SYLAR_LOG_INFO(g_logger_sys) << "<-- PCM PGO END ";
     }

@@ -22,11 +22,11 @@ namespace cmd
         /**
          * PCM_MODE
          */
-        KimeraRPGO::RobustSolverParams params;
-        params.setPcm3DParams(3.0, 0.05, KimeraRPGO::Verbosity::QUIET);
-        params.setMultiRobotAlignMethod(KimeraRPGO::MultiRobotAlignMethod::GNC);
-        params.outlierRemovalMethod = KimeraRPGO::OutlierRemovalMethod::PCM3D;
-        m_pgo.reset(new SE3PcmSolver(params));
+        RobustSolverParams params;
+        params.setPcm3DParams(3.0, 0.05, Verbosity::QUIET);
+        params.setMultiRobotAlignMethod(MultiRobotAlignMethod::GNC);
+        params.outlierRemovalMethod = OutlierRemovalMethod::PCM3D;
+        solver_.reset(new PcmSolver(params));
     }
     bool Map::checkIsNeedOptimize(LoopEdgePtr le){
         RWMutextType::ReadLock lk(m_mutex);
@@ -92,14 +92,15 @@ namespace cmd
         /**
          * PCM_MODE
          */
-        if (m_opt_mode == OptimizationMode::GTSAM_PcmSE3)
+        if (m_opt_mode == OptimizationMode::PCM_OUTLIER)
         {
             LoopEdgeVector pcm_les;
             for (auto le : lf->m_edges)
             {
                 pcm_les.push_back(le);
             }
-            m_pgo->updateByLoopEdge(pcm_les, false);
+            // pcm_les 包含了所有的约束，包括回环和里程计
+            solver_->insertLoopEdgeAndUpdate(pcm_les,true);
         }
 
         m_viewer->showLoopframes(lf);
@@ -128,7 +129,7 @@ namespace cmd
         /**
          * PCM_MODE
          */
-        if (m_opt_mode == OptimizationMode::GTSAM_PcmSE3)
+        if (m_opt_mode == OptimizationMode::PCM_OUTLIER)
         {
             LoopEdgeVector pcm_les;
             pcm_les.push_back(le);
@@ -136,7 +137,7 @@ namespace cmd
             {
                 pcm_les.push_back(tmp_le);
             }
-            m_pgo->updateByLoopEdge(pcm_les, false);
+            solver_->insertLoopEdgeAndUpdate(pcm_les,true);
         }
 
         LoopframeVector update_view_lfs;
@@ -166,8 +167,8 @@ namespace cmd
     }
     void Map::updateMapAfterPcmOptimize()
     {
-        gtsam::Values map_vals;
-        m_pgo->getAllVals(map_vals);
+        LoopframeValue map_vals;
+        solver_->getAllValueToUpdateMap(map_vals);
 
         RWMutextType::WriteLock lk(m_mutex);
         size_t optimized_cnt = 0;
@@ -177,11 +178,10 @@ namespace cmd
             for (auto plf : fmgr.second->m_lfs)
             {
                 LoopframePtr lf = plf.second;
-                gtsam::Symbol sym_lf(lf->m_client_id, lf->m_lf_id);
-                if (map_vals.exists(sym_lf))
+                LoopframeKey key_lf = GetKey(lf->m_client_id, lf->m_lf_id);
+                if (map_vals.exist(key_lf))
                 {
-                    gtsam::Pose3 optimized_pose = map_vals.at<gtsam::Pose3>(sym_lf);
-                    lf->m_twc = TransMatrixType(optimized_pose.matrix());
+                    lf->m_twc = map_vals[key_lf];
                     optimized_cnt++;
                 }
                 sum_cnt++;
@@ -427,9 +427,9 @@ namespace cmd
         SYLAR_LOG_INFO(g_logger_sys) << "--> START map manager ";
         while (m_runing)
         {
-            if (this->checkMerageBuf())
+            if (this->checkLoopclosureBuf())
             {
-                this->performMerge();
+                this->processLoopClosures();
             }
             usleep(1000);
         }
@@ -473,18 +473,18 @@ namespace cmd
         tmp_map->addLoopframe(lf);
         return true;
     }
-    bool Mapmanager::checkMerageBuf()
+    bool Mapmanager::checkLoopclosureBuf()
     {
-        return !m_merge_buf.empty();
+        return !m_lc_buf.empty();
     }
 
-    void Mapmanager::performMerge()
+    void Mapmanager::processLoopClosures()
     {
         LoopEdgePtr le;
         {
-            std::unique_lock<std::mutex> lk(m_mtx_merge_buf);
-            le = m_merge_buf.front();
-            m_merge_buf.pop_front();
+            std::unique_lock<std::mutex> lk(m_mtx_lc_buf);
+            le = m_lc_buf.front();
+            m_lc_buf.pop_front();
         }
         
         
@@ -496,8 +496,8 @@ namespace cmd
         {
             SYLAR_LOG_DEBUG(g_logger_sys) << "maps is optimizing";
             // 正在优化中，先不执行这些处理
-            std::unique_lock<std::mutex> lk(m_mtx_merge_buf);
-            m_merge_buf.push_back(le);
+            std::unique_lock<std::mutex> lk(m_mtx_lc_buf);
+            m_lc_buf.push_back(le);
             return;
         }
 
@@ -519,10 +519,10 @@ namespace cmd
             auto mode = map_to->m_opt_mode;
             // auto mode = 3;
             switch (mode){
-                case OptimizationMode::GTSAM_PcmSE3:
+                case OptimizationMode::PCM_OUTLIER:
                     Optimization::PCMPoseGraphOptimization(map_to, {le});
                     break;
-                case OptimizationMode::Ceres_Sim3:
+                case OptimizationMode::CERES_SIM3:
                     Optimization::Sim3PoseGraphOptimization(map_to);    
                     break;
                 default:
@@ -547,8 +547,8 @@ namespace cmd
     void Mapmanager::createConstrant(LoopframePtr from, LoopframePtr to, TransMatrixType t_tf, precision_t icp_score, precision_t sc_score)
     {
         LoopEdgePtr le(new LoopEdge(from, to, t_tf, icp_score, sc_score, EdgeType::LOOPCLOSURE));
-        std::unique_lock<std::mutex> lk(m_mtx_merge_buf);
-        m_merge_buf.push_back(le);
+        std::unique_lock<std::mutex> lk(m_mtx_lc_buf);
+        m_lc_buf.push_back(le);
     }
 
 }

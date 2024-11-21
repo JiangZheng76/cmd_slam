@@ -25,7 +25,7 @@ namespace cmd
             LoopframePtr from = le->m_from_lf;
             LoopframePtr to = le->m_to_lf;
 
-            if (le->m_type == EdgeType::REFERENCE)
+            if (le->m_type == EdgeType::ODOMETRY)
             {
                 // 注意不同 le 之间的转化，lc 和 ref！！！
                 // 因为在pcm 中是根据id 来判断是否是 odom 的

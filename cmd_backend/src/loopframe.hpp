@@ -36,21 +36,20 @@ namespace cmd
 
   enum EdgeType
   {
-    LOOPCLOSURE = 0,
-    REFERENCE = 1
+    UNCLASSIFIED,
+    LOOPCLOSURE,
+    ODOMETRY,
   };
   struct LoopEdge
   {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     // 持有该 edge 的 lf 为入度端
-    LoopframePtr m_from_lf; // ref , query
-    LoopframePtr m_to_lf;   // cur , match
+    LoopframePtr m_from_lf; // ref ｜ query
+    LoopframePtr m_to_lf;   // cur ｜ match
 
     InformationMat m_info;  // 信息矩阵
     TransMatrixType m_t_tf; // from -> to ref -> to query->match
 
-    bool m_is_added;
-    bool m_is_ref;
     precision_t m_icp_score; // icp 匹配得分
     precision_t m_sc_score;  // sc 匹配得分
 

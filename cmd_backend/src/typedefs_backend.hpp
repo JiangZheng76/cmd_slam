@@ -97,6 +97,8 @@ namespace cmd
 
 	using Point3 = Eigen::Vector3d;
 
+	using Matrix = Eigen::MatrixXd;
+
 	using InformationMat = Matrix7Type;
 
 	using VecSim3 = Eigen::Vector<double,7>;

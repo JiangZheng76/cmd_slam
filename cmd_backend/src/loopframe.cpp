@@ -12,7 +12,7 @@ namespace cmd
     {
     }
     LoopEdge::LoopEdge(LoopframePtr from, LoopframePtr to, const TransMatrixType &t_tf, precision_t icp_score, precision_t sc_score, EdgeType type)
-        : m_from_lf(from), m_to_lf(to), m_t_tf(t_tf), m_is_added(false), m_icp_score(icp_score), m_sc_score(sc_score), m_type(type)
+        : m_from_lf(from), m_to_lf(to), m_t_tf(t_tf), m_icp_score(icp_score), m_sc_score(sc_score), m_type(type)
     {
         precision_t dso_error = to->m_dso_error;
         precision_t scale_error = to->m_scale_error;
@@ -113,7 +113,7 @@ namespace cmd
                 return true;
             }
         }
-        LoopEdgePtr le(new LoopEdge(ref, shared_from_this(), t_tf, icp_score, sc_score, EdgeType::REFERENCE));
+        LoopEdgePtr le(new LoopEdge(ref, shared_from_this(), t_tf, icp_score, sc_score, EdgeType::ODOMETRY));
         m_edges.push_back(le);
         return true;
     }
