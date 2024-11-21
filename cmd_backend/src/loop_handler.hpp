@@ -32,7 +32,7 @@ namespace cmd
         ThreadPtr m_main_thread;
 
         // buff
-        MutextType m_mtx_buf_lf;
+        MutexType m_mtx_buf_lf;
         LoopframeList m_buf_lfs; // LoopHandler 中新加入待处理的 LF
 
         LoopframeVector m_preocessed_lf; // 所有回环处理过的帧，所有帧，包括不是顶点的帧 下标和 scancontext 相同

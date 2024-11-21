@@ -40,8 +40,8 @@ namespace cmd
     using Logger = mysylar::Logger;
     using LoggerPtr = mysylar::Logger::ptr;
 
-    using RWMutextType = mysylar::RWMutex;
-    using MutextType = mysylar::Mutex;
+    using RWMutexType = mysylar::RWMutex;
+    using MutexType = mysylar::Mutex;
 
     using Thread = mysylar::Thread;
     using ThreadPtr = mysylar::Thread::ptr;

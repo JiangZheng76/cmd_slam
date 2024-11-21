@@ -46,7 +46,7 @@ namespace cmd
                     usleep(500);
                     continue;
                 }
-                MutextType::Lock lk(m_mtx_buf_lf);
+                MutexType::Lock lk(m_mtx_buf_lf);
                 query_frame = m_buf_lfs.front();
                 m_buf_lfs.pop_front();
             }

@@ -2,16 +2,21 @@
 #include "loopframe.hpp"
 #include "ceres/ceres.h"
 #include "cmd_sim3.hpp"
+#include "map.hpp"
+#include "optimization/optimization.hpp" 
 
 namespace cmd
 {
     static LoggerPtr g_logger_sys = SYLAR_LOG_NAME("PCM-PGO");
 
-    PcmSolver::PcmSolver(const RobustSolverParams &params)
+    PcmSolver::PcmSolver(const RobustSolverParams &params,std::weak_ptr<Map> weak_map)
     {
+        map_ = weak_map;
         solver_running_ = true;
         optimizing_ = false;
         need_optimize_ = false;
+        outlier_removal_ = std::make_unique<Pcm>(params);
+        // 启动优化线程
     }
     PcmSolver::~PcmSolver()
     {
@@ -38,7 +43,7 @@ namespace cmd
             values.insert({to_key, to->m_twc});
         }
     }
-    void PcmSolver::insertLoopEdgeAndUpdate(LoopEdgeVector &les, bool is_optimize)
+    void PcmSolver::insertLoopEdgeAndUpdate(const LoopEdgeVector &les, bool is_optimize)
     {
         //!!! 因为优化和outlier removal是两个不同的缓存位置，所以暂时不需要考虑这个优化时候的并行问题
         // 创建factorGraph
@@ -71,7 +76,7 @@ namespace cmd
     }
     void PcmSolver::callOptimize()
     {
-        RWMutextType::WriteLock lk(mutex_);
+        RWMutexType::WriteLock lk(mutex_);
         need_optimize_ = true;
     }
     /// @brief 不进行outlier处理，直接判断是否可以优化
@@ -111,11 +116,12 @@ namespace cmd
 
         return false;
     }
-    void PcmSolver::updateDataAfterOptimize(Sim3LoopframeValue& sim3_values)
-    {   
+    void PcmSolver::updateDataAfterOptimize(Sim3LoopframeValue &sim3_values)
+    {
         // 记录原有的帧
-        std::unordered_map<int_t,std::pair<int_t,TransMatrixType>> record;
-        for(auto& sval : sim3_values){
+        std::unordered_map<int_t, std::pair<int_t, TransMatrixType>> record;
+        for (auto &sval : sim3_values)
+        {
             auto key = sval.first;
             auto client = GetKeyClientID(key);
             auto id = GetKeyLoopframeID(key);
@@ -124,41 +130,44 @@ namespace cmd
             auto twc = ToOrthogonalTrans(sim_matrix);
 
             // 记录id最大一帧的位姿
-            if(record.find(client) == record.end() ||
-                record[client].first < id){
-                record[client] = {id,values_[key]}; 
+            if (record.find(client) == record.end() ||
+                record[client].first < id)
+            {
+                record[client] = {id, values_[key]};
             }
-            values_.insert({key,twc});
+            values_.insert({key, twc});
         }
         // 更新优化过程中新进来的帧
-        for(auto& client_id_pose : record){
+        for (auto &client_id_pose : record)
+        {
             auto robot = client_id_pose.first;
             auto id = client_id_pose.second.first;
             auto t_w_prev = client_id_pose.second.second;
-            
-            while(values_.find(GetKey(robot,id+1)) != values_.end())
-            {   
+
+            while (values_.find(GetKey(robot, id + 1)) != values_.end())
+            {
                 id++;
-                auto old_t_wc = values_[GetKey(robot,id)];
-                auto new_t_w_prev = values_[GetKey(robot,id-1)];
+                auto old_t_wc = values_[GetKey(robot, id)];
+                auto new_t_w_prev = values_[GetKey(robot, id - 1)];
                 auto t_prev_c = t_w_prev.inverse() * old_t_wc;
                 auto new_t_wc = new_t_w_prev * t_prev_c;
-                values_[GetKey(robot,id)] = new_t_wc;
+                values_[GetKey(robot, id)] = new_t_wc;
                 t_w_prev = old_t_wc; // 循环用作更新下一个
             }
         }
-        is_update_ = true;
     }
-    const LoopframeValue& PcmSolver::getValue(){
+
+    const LoopframeValue &PcmSolver::getValue()
+    {
         return values_;
     }
     /// @brief 执行优化主函数
-    void PcmSolver::optimize()
+    void PcmSolver::optimize(MapPtr map)
     {
         FactorGraph full_fg;
         Sim3LoopframeValue full_values;
         {
-            RWMutextType::WriteLock lk(mutex_);
+            RWMutexType::WriteLock lk(mutex_);
             need_optimize_ = false;
             optimizing_ = true;
             full_fg = nfg_;
@@ -210,12 +219,12 @@ namespace cmd
         ceres::Solver::Summary summary;
         ceres::Solve(solver_options, &problem, &summary);
         // 结束位置
-        {
-            RWMutextType::WriteLock lk(mutex_);
-            // 更新数据
-            updateDataAfterOptimize(full_values);
-            optimizing_ = false;
-        }
+        RWMutexType::WriteLock map_lk(map->getMutext());
+        RWMutexType::WriteLock lk(mutex_);
+        // 更新数据
+        updateDataAfterOptimize(full_values);
+        map->updateMapAfterRPGO(values_);
+        optimizing_ = false;
     }
     /// @brief 检查是否启动优化
     /// @return
@@ -230,18 +239,30 @@ namespace cmd
     /// @brief 优化线程
     void PcmSolver::Run()
     {
-        while (solver_running_)
-        {
-            if (checkNeedOptimize())
-            {
-                optimize();
+        while(solver_running_){
+            MutexType::TryLock lk(optimize_mutex_); // 用作合并时候的
+            if(lk.trylock() && checkNeedOptimize()){
+                MapPtr map = getMap();
+                if(map){
+                    SYLAR_LOG_INFO(g_logger_sys) << "--> RPGO START ";
+                    MapOptimizationWrap map_wrap(map);
+                    optimize(map);
+                    SYLAR_LOG_INFO(g_logger_sys) << "<-- RPGO END ";
+                }else{
+                    SYLAR_LOG_ERROR(g_logger_sys) << "map is nullptr";
+                    break;
+                }
             }
-            usleep(1000);
+            usleep(500);
         }
+        SYLAR_LOG_INFO(g_logger_sys) << "pcm solver optimize thread is end.";
+    }
+    MapPtr PcmSolver::getMap(){
+        // 获取 map 的智能指针
+        return map_.lock();
     }
     void PcmSolver::Stop()
     {
         solver_running_ = false;
     }
-
 }

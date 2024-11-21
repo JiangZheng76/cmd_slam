@@ -38,13 +38,15 @@ namespace cmd
         OptimizationMode m_opt_mode = OptimizationMode::PCM_OUTLIER;
         std::map<std::pair<int_t,int_t>,int_t> m_last_opt;
 
-        RWMutextType m_mutex;
+        RWMutexType m_mutex;
 
     public:
         Map(size_t id,PangolinViewerPtr viewer);
 
         void setOptimizedMode();
         void setOptimizingMode();
+
+        RWMutexType& Map::getMutext();
 
         bool checkIsNeedOptimize(LoopEdgePtr le);
 
@@ -58,7 +60,8 @@ namespace cmd
         void mergeMap(MapPtr fuse, LoopEdgePtr le, const TransMatrixType &Tcf);
 
         bool updateMapAfterOptimize(); // 更新优化之后的效果
-        void updateMapAfterPcmOptimize(); // PCM 优化之后更新效果
+        void updateMapAfterRPGO(const LoopframeValue& values); // PCM 优化之后更新效果
+
         LoopframeVector getAllLoopframe();
         LoopEdgeVector getAllLoopEdge();
 
@@ -97,7 +100,8 @@ namespace cmd
         LoopframePtr getPrevLoopframe();
         LoopframePtr getLoopframeByKFId(int_t kf_id);
 
-        void updateAfterOptimize();
+        LoopframeVector updateInsertFrameWhileOptimize();
+        void updateFramesFromCeres();
 
         void dump();
         void showResult();
@@ -125,6 +129,7 @@ namespace cmd
 
         MapPtr getMap(int_t clientId);
         bool addLoopframe(LoopframePtr lf);
+        static void MergeMap(MapPtr from_map,MapPtr to_map,LoopEdgePtr le);
 
         bool checkLoopclosureBuf();
         void processLoopClosures();

@@ -25,7 +25,7 @@ namespace cmd
     }
     void LoopframeDisplay::setFromLF(LoopframePtr lf)
     {
-        MutextType::Lock lk(m_muetx);
+        MutexType::Lock lk(m_muetx);
 
         m_lf_id = lf->m_lf_id;
         // add all traces, inlier and outlier points.
@@ -58,7 +58,7 @@ namespace cmd
             return;
         }
 
-        MutextType::Lock lk(m_muetx);
+        MutexType::Lock lk(m_muetx);
         m_need_refresh = false;
         // if there are no vertices, done!
         if (m_num_sparse_points == 0)

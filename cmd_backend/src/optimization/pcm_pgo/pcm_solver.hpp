@@ -14,10 +14,10 @@ namespace cmd
     class PcmSolver
     {
     public:
-        PcmSolver(const RobustSolverParams &params);
+        PcmSolver(const RobustSolverParams &params,std::weak_ptr<Map> weak_map);
 
         // 插入 factor 并更新
-        void insertLoopEdgeAndUpdate(LoopEdgeVector &les, bool is_optimize);
+        void insertLoopEdgeAndUpdate(const LoopEdgeVector &les, bool is_optimize);
 
         void update(FactorGraph &factors, LoopframeValue &value, bool is_optimize);
 
@@ -29,17 +29,19 @@ namespace cmd
 
         void callOptimize();
 
-        void optimize();
+        void optimize(MapPtr map);
 
         bool checkNeedOptimize();
-
-        void Run();
         
         void Stop();
+
+        void Run();
 
         void updateDataAfterOptimize(Sim3LoopframeValue& sim3_values);
 
         const LoopframeValue& getValue();
+
+        MapPtr getMap();
 
     private:
         std::unique_ptr<OutlierRemoval> outlier_removal_;
@@ -53,7 +55,10 @@ namespace cmd
         bool optimizing_;
         bool need_optimize_;
         bool solver_running_; // 优化线程
-        bool is_update-;
-        RWMutextType mutex_; // 读写里面数据的互斥变量
+        RWMutexType mutex_; // 读写里面数据的互斥变量
+        MutexType optimize_mutex_;
+
+        // 维护 map 的数据
+        std::weak_ptr<Map> map_;
     };
 }

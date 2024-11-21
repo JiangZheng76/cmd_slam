@@ -92,8 +92,8 @@ namespace cmd
         SYLAR_LOG_INFO(g_logger_sys) << "--> PCM PGO START ";
         MapOptimizationWrap map_wrap(map);
 
-        map->solver_->insertLoopEdgeAndUpdate(les, true); // 启动优化
-        map->updateMapAfterPcmOptimize();        // 更新数据
+        // map->solver_->insertLoopEdgeAndUpdate(les, true); // 启动优化
+        // map->updateMapAfterPcmOptimize();        // 更新数据
         SYLAR_LOG_INFO(g_logger_sys) << "<-- PCM PGO END ";
     }
 }

@@ -99,7 +99,7 @@ namespace cmd
     bool m_is_need_to_update_viewer;
 
     bool m_optimizing;  // 优化状态符
-    RWMutextType m_mtx; // 访问的读写互斥锁
+    RWMutexType m_mtx; // 访问的读写互斥锁
 
   public:
     Loopframe(MsgLoopframePtr msg, bool first_loopframe = false);

@@ -26,10 +26,15 @@ namespace cmd
         params.setPcm3DParams(3.0, 0.05, Verbosity::QUIET);
         params.setMultiRobotAlignMethod(MultiRobotAlignMethod::GNC);
         params.outlierRemovalMethod = OutlierRemovalMethod::PCM3D;
-        solver_.reset(new PcmSolver(params));
+        solver_ = std::make_unique<PcmSolver>(params);
+        // 启动线程之后，detch 线程
+        Thread(std::bind(PcmSolver::Run,solver_.get()),"pcm_solver_thread");
+    }
+    RWMutexType& Map::getMutext(){
+        return m_mutex;
     }
     bool Map::checkIsNeedOptimize(LoopEdgePtr le){
-        RWMutextType::ReadLock lk(m_mutex);
+        RWMutexType::ReadLock lk(m_mutex);
         std::pair<int_t,int_t> toID_formID = std::make_pair(le->m_to_lf->m_client_id,le->m_from_lf->m_client_id);
         if(m_last_opt.find(toID_formID) == m_last_opt.end()){
             m_last_opt.insert(std::make_pair(toID_formID,le->m_to_lf->m_lf_id));
@@ -43,12 +48,12 @@ namespace cmd
     }
     bool Map::hasAgent(int client_id)
     {
-        RWMutextType::ReadLock lk(m_mutex);
+        RWMutexType::ReadLock lk(m_mutex);
         return m_fmgrs.find(client_id) != m_fmgrs.end();
     }
     LoopframePtr Map::getLoopframe(size_t client_id, size_t kf_id, bool expect_null)
     {
-        RWMutextType::ReadLock lk(m_mutex);
+        RWMutexType::ReadLock lk(m_mutex);
         if (m_fmgrs.find(client_id) != m_fmgrs.end())
         {
             return m_fmgrs[client_id]->getLoopframeByKFId(kf_id);
@@ -56,18 +61,19 @@ namespace cmd
         return nullptr;
     }
     /// @brief 在 merge 时候才放进去 Map 中
-    /// @param le
+    /// @param 
     void Map::addLoopEdge(LoopEdgePtr le)
     {
-        RWMutextType::WriteLock lk(m_mutex);
+        RWMutexType::WriteLock lk(m_mutex);
         m_les.insert(le);
+        solver_->insertLoopEdgeAndUpdate({le},true);
     }
 
     /// @brief odom 添加过程中添加新帧
     /// @param lf
     void Map::addLoopframe(LoopframePtr lf)
     {
-        RWMutextType::WriteLock lk(m_mutex);
+        RWMutexType::WriteLock lk(m_mutex);
         if (!m_fix_lf)
         {
             m_fix_lf = lf;
@@ -107,7 +113,7 @@ namespace cmd
     }
     void Map::transformMap(const TransMatrixType &Ttc)
     {
-        RWMutextType::WriteLock lk(m_mutex);
+        RWMutexType::WriteLock lk(m_mutex);
         for (auto it = m_fmgrs.begin(); it != m_fmgrs.end(); it++)
         {
             FramemanagerPtr fm = it->second;
@@ -116,7 +122,7 @@ namespace cmd
     }
     void Map::mergeMap(MapPtr fuse, LoopEdgePtr le, const TransMatrixType &Tcf)
     {
-        RWMutextType::WriteLock lk(m_mutex);
+        RWMutexType::WriteLock lk(m_mutex);
         fuse->transformMap(Tcf);
 
         // 将fuse 数据都加入到当前的 map 中
@@ -153,11 +159,12 @@ namespace cmd
     }
     bool Map::updateMapAfterOptimize()
     {
-        RWMutextType::WriteLock lk(m_mutex);
+        RWMutexType::WriteLock lk(m_mutex);
         LoopframeVector updated_lfs;
         for (auto fmgr : m_fmgrs)
         {
-            fmgr.second->updateAfterOptimize();
+            fmgr.second->updateFramesFromCeres();
+            fmgr.second->updateInsertFrameWhileOptimize();
             for (auto lf : fmgr.second->m_lfs)
             {
                 updated_lfs.push_back(lf.second);
@@ -165,35 +172,35 @@ namespace cmd
         }
         m_viewer->showLoopframes(updated_lfs);
     }
-    void Map::updateMapAfterPcmOptimize()
-    {
-        LoopframeValue map_vals;
-        solver_->getAllValueToUpdateMap(map_vals);
-
-        RWMutextType::WriteLock lk(m_mutex);
-        size_t optimized_cnt = 0;
-        size_t sum_cnt = 0;
-        for (auto fmgr : m_fmgrs)
-        {
-            for (auto plf : fmgr.second->m_lfs)
-            {
-                LoopframePtr lf = plf.second;
-                LoopframeKey key_lf = GetKey(lf->m_client_id, lf->m_lf_id);
-                if (map_vals.exist(key_lf))
-                {
-                    lf->m_twc = map_vals[key_lf];
-                    optimized_cnt++;
-                }
-                sum_cnt++;
+    void Map::updateMapAfterRPGO(const LoopframeValue& values){
+        LoopframeVector view_update_loopframes;
+        view_update_loopframes.reserve(values.size());
+        for(const auto& key_pose : values){
+            auto key = key_pose.first;
+            auto pose = key_pose.second;
+            auto client = GetKeyClientID(key);
+            auto id = GetKeyLoopframeID(key);
+            
+            LoopframePtr lf = getLoopframe(client,id);
+            if(!lf){
+                SYLAR_ASSERT2(false,"solver frame is no exist in map.");
+            }
+            lf->m_twc = pose;
+            view_update_loopframes.push_back(lf);
+        }
+        // 更新优化过程中插入的帧
+        for(auto& [key,fmgr] : m_fmgrs){
+            auto&& loopframes = fmgr->updateInsertFrameWhileOptimize();
+            view_update_loopframes.reserve(view_update_loopframes.size() + loopframes.size());
+            for(auto lf : loopframes){
+                view_update_loopframes.push_back(lf);
             }
         }
-        SYLAR_LOG_INFO(g_logger_sys) << "优化更新了 " << optimized_cnt << " 关键帧"
-                                     << "，当前 map 的总帧数为 "
-                                     << sum_cnt << "。";
+        m_viewer->showLoopframes(view_update_loopframes);
     }
     std::string Map::dump()
     {
-        RWMutextType::ReadLock lk(m_mutex);
+        RWMutexType::ReadLock lk(m_mutex);
         std::stringstream ss;
         ss << "Map INFO "
            << "[id:" << m_mapId
@@ -212,7 +219,7 @@ namespace cmd
     }
     void Map::setOptimizingMode()
     {
-        RWMutextType::WriteLock lk(m_mutex);
+        RWMutexType::WriteLock lk(m_mutex);
         m_optimizing = true;
         for (auto fmgr : m_fmgrs)
         {
@@ -221,7 +228,7 @@ namespace cmd
     }
     void Map::setOptimizedMode()
     {
-        RWMutextType::WriteLock lk(m_mutex);
+        RWMutexType::WriteLock lk(m_mutex);
         m_optimizing = false;
         for (auto fmgr : m_fmgrs)
         {
@@ -230,7 +237,7 @@ namespace cmd
     }
     LoopframeVector Map::getAllLoopframe()
     {
-        RWMutextType::ReadLock lk(m_mutex);
+        RWMutexType::ReadLock lk(m_mutex);
         LoopframeVector lfs;
         for (auto fmgr : m_fmgrs)
         {
@@ -245,7 +252,7 @@ namespace cmd
     /// @return
     LoopEdgeVector Map::getAllLoopEdge()
     {
-        RWMutextType::ReadLock lk(m_mutex);
+        RWMutexType::ReadLock lk(m_mutex);
         LoopEdgeVector les;
         les.reserve(m_les.size());
         for (auto le : m_les)
@@ -256,7 +263,7 @@ namespace cmd
     }
     void Map::updateLoopframeFromMsg(MsgLoopframePtr msg)
     {
-        RWMutextType::WriteLock lk(m_mutex);
+        RWMutexType::WriteLock lk(m_mutex);
         LoopframePtr lf = nullptr;
         if (m_fmgrs.find(msg->m_client_id) != m_fmgrs.end())
         {
@@ -278,16 +285,19 @@ namespace cmd
     Framemanager::~Framemanager()
     {
     }
-    void Framemanager::updateAfterOptimize()
-    {
-
+    void Framemanager::updateFramesFromCeres(){
         SYLAR_ASSERT2(m_optimizing, "framemanager 不是处于优化状态!");
-
+        // 不需要ceres 更新
         for (auto lf : m_lfs)
         {
             lf.second->updateFromCeres();
         }
-
+    }
+    LoopframeVector Framemanager::updateInsertFrameWhileOptimize()
+    {
+        SYLAR_ASSERT2(m_optimizing, "framemanager 不是处于优化状态!");
+        LoopframeVector result;
+        result.reserve(m_optimizing_buf.size());
         // 更新未入档的 lf
         while (!m_optimizing_buf.empty())
         {
@@ -309,9 +319,11 @@ namespace cmd
                 lf->m_twc = ref_lf->m_twc * tmp_T_tf;
             }
             m_lfs.insert(std::make_pair(lf->m_lf_id, lf));
+            result.push_back(lf);
         }
 
         m_optimizing = true; // 更新完之后就重新开锁，防止后面的 addLoopframe 还放进 buf 中
+        return result;
     }
     /// @brief 添加新帧，生成点云信息
     /// @param lf
@@ -422,6 +434,14 @@ namespace cmd
         m_runing = false;
         m_thread->join();
     }
+    void Mapmanager::MergeMap(MapPtr from_map,MapPtr to_map,LoopEdgePtr le){
+        // 确保两个 map 都没有在优化中
+        MutexType::Lock from_lk(from_map->getMutext);
+        // 需要给两个 map 上写锁
+        // 需要将 pcm 原有的 pair 插入进去
+        // 执行一次优化
+        // TODO 实现合并处理
+    }
     void Mapmanager::Run()
     {
         SYLAR_LOG_INFO(g_logger_sys) << "--> START map manager ";
@@ -507,28 +527,11 @@ namespace cmd
         if (map_from == map_to)
         {
 
-            map_to->addLoopEdge(le);
             SYLAR_LOG_DEBUG(g_logger_sys) << "\n" << le->m_t_tf.matrix();
             if(!map_to->checkIsNeedOptimize(le)){
                 return;
             }
-            // TODO 设置优化间隔
-            /**
-             * PCM_MODE
-             */
-            auto mode = map_to->m_opt_mode;
-            // auto mode = 3;
-            switch (mode){
-                case OptimizationMode::PCM_OUTLIER:
-                    Optimization::PCMPoseGraphOptimization(map_to, {le});
-                    break;
-                case OptimizationMode::CERES_SIM3:
-                    Optimization::Sim3PoseGraphOptimization(map_to);    
-                    break;
-                default:
-                    SYLAR_LOG_WARN(g_logger_sys) << "WITHOUT Optimization mode.";
-                    return;
-            }
+            map_to->addLoopEdge(le); // 添加factor，会识别是否需要优化
             SYLAR_LOG_DEBUG(g_logger_sys) << "Preformed Optimize.  "
                                           << map_from->dump();
         }

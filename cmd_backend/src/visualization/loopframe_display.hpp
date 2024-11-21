@@ -55,7 +55,7 @@ namespace cmd
         uint64_t m_lf_id;
         TransMatrixType m_Twc;
 
-        MutextType m_muetx;
+        MutexType m_muetx;
 
         LoopframePtr m_lf;
 
