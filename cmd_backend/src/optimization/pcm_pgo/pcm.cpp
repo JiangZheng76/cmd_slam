@@ -11,7 +11,7 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/PriorFactor.h> 
+#include <gtsam/slam/PriorFactor.h>
 
 namespace cmd
 {
@@ -29,14 +29,123 @@ namespace cmd
           loop_consistency_check_(true)
     {
     }
+    int findAndInsertClient(std::vector<ClientSet>& map_client,int_t client){
+        int len = map_client.size();
+        for(int i=0;i<len;i++){
+            auto& client_set = map_client[i];
+            if(client_set.find(client) != client_set.end()){
+                return i;
+            }
+        }
+        map_client.push_back(ClientSet());
+        map_client.back().insert(client);
+        return len;
+    }
+    /// 分类到 output_value 中
+    void Pcm::classifyNewLoopframeToMap(const LoopframeValue &new_loopframes,
+                            std::vector<LoopframeValue> *output_values,
+                            std::vector<FactorGraph> *output_nfg){
+        if(!(map_clients_.size() == output_values->size() && 
+            map_clients_.size() == output_nfg->size()) && 
+            map_clients_.size() == nfg_odom_.size()){
+                SYLAR_LOG_ERROR(g_logger) << "map 的四个成员长度不一致"
+                    << "[map_client:" << map_clients_.size() << "]"
+                    << "[output_values:" << output_values->size() << "]"
+                    << "[output_nfg:" << output_nfg->size() << "]"
+                    << "[nfg_odom:" << nfg_odom_.size() << "]";
+                SYLAR_ASSERT(false);
+            }
+        // 获取所有的 client
+        std::set<int> clients;
+        for(const auto& [key,pose] : new_loopframes){
+            auto client = GetKeyClientID(key);
+            clients.insert(client);
+        }
+        for(auto client : clients){
+            findAndInsertClient(map_clients_,client); // 返回client所在的 id
+        }
+        
+        // 判断是否有扩充了 map 的数量
+        // 扩充 
+        if(map_clients_.size() > output_values->size()){
+            int target_size = map_clients_.size();
+            output_values->resize(target_size);
+            output_nfg->resize(target_size);
+            nfg_odom_.resize(target_size);
+        }
+        for(auto& [key,pose] : new_loopframes){
+            // 插入到对应的 values 中
+            // 创建 map_clients_成员
+            auto client = GetKeyClientID(key);
+            int map_id = findAndInsertClient(map_clients_,client);
+            (*output_values)[map_id].insert({key,pose});
+        }
+    }
+    void Pcm::mergeCheckAndPreform(std::unordered_map<ObservationId, size_t>& new_num_loopclosures,
+                                std::vector<FactorGraph> &output_nfg,
+                                std::vector<LoopframeValue> &output_values){
+        if(!(map_clients_.size() == output_values.size() && 
+            map_clients_.size() == output_nfg.size()) && 
+            map_clients_.size() == nfg_odom_.size()){
+                SYLAR_LOG_ERROR(g_logger) << "map 的四个成员长度不一致"
+                    << "[map_client:" << map_clients_.size() << "]"
+                    << "[output_values:" << output_values.size() << "]"
+                    << "[output_nfg:" << output_nfg.size() << "]"
+                    << "[nfg_odom:" << nfg_odom_.size() << "]";
+                SYLAR_ASSERT(false);
+            }
+        // 检查是否有新的约束成立
+        for(auto [obs_id,num] : new_num_loopclosures){
+            auto map_a = findAndInsertClient(map_clients_,obs_id.client_a);
+            auto map_b = findAndInsertClient(map_clients_,obs_id.client_b);
+
+            if(map_a != map_b){
+                // a是在前面的
+                if(map_a > map_b)std::swap(map_a,map_b);
+
+                auto& a_value = output_values[map_a];
+                auto& a_nfg = output_nfg[map_a];
+                auto& a_nfg_odom = nfg_odom_[map_a];
+                auto& a_map_clients = map_clients_[map_a];
+
+                auto& b_value = output_values[map_b];
+                auto& b_nfg = output_nfg[map_b];
+                auto& b_nfg_odom = nfg_odom_[map_b];
+                auto& b_map_clients = map_clients_[map_b];
+
+                // 合并并删掉
+                a_value.add(b_value);
+                a_nfg.add(b_nfg);
+                a_nfg_odom.add(b_nfg_odom);
+                for(auto client : b_map_clients){
+                    a_map_clients.insert(client);
+                }
+                
+                // 删除掉 b
+                int new_len = map_clients_.size() - 1;
+                int old_len = map_clients_.size();
+                for(int i=map_b+1,j = map_b;i<old_len;i++,j++){
+                    output_values[j] = std::move(output_values[i]);
+                    output_nfg[j] = std::move(output_nfg[i]);
+                    nfg_odom_[j] = std::move(nfg_odom_[i]);
+                    map_clients_[j] = std::move(map_clients_[i]);
+                }
+                output_values.resize(new_len);
+                output_nfg.resize(new_len);
+                nfg_odom_.resize(new_len);
+                map_clients_.resize(new_len);
+            }
+        }
+    }
 
     bool Pcm::removeOutliers(const FactorGraph &new_factors,
                              const LoopframeValue &new_loopframes,
-                             FactorGraph *output_nfg,
-                             LoopframeValue *output_values)
+                             std::vector<FactorGraph> *output_nfg,
+                             std::vector<LoopframeValue> *output_values,
+                             std::vector<bool> *need_optimized_map)
     {
-        // 1、保存所有的loopframe数据
-        output_values->add(new_loopframes);
+        // 1、将新帧插分类到不同的位置中
+        classifyNewLoopframeToMap(new_loopframes,output_values,output_nfg);
 
         if (new_factors.size() == 0)
         {
@@ -58,7 +167,9 @@ namespace cmd
             switch (type)
             {
             case EdgeType::ODOMETRY:
-                updateOdom(new_factors[i], *output_values);
+                int_t client = from_client;
+                int map_id = findAndInsertClient(map_clients_,client);
+                updateOdom(map_id,new_factors[i], *output_values);
                 break;
             case EdgeType::LOOPCLOSURE:
                 // 后面处理
@@ -86,14 +197,18 @@ namespace cmd
                 // 判断所有 adjmatrix ，找新的 consistent_factor 集
                 findInliers();
             }
+            // 检查合并处理
+            mergeCheckAndPreform(num_new_loopclosures,*output_nfg,*output_values);
+            extractNeedOptimizeMap(num_new_loopclosures, *need_optimized_map); // 提取需要优化的 mapid
             do_optimize = true;
         }
-        *output_nfg = buildGraphToOptimize();
         if (multirobot_align_method_ != MultiRobotAlignMethod::NONE &&
             robot_order_.size() > 1)
         {
+            // 给新合并的 robot 位姿进行初始化处理
             *output_values = multirobotValueInitialization(*output_values);
         }
+        // *output_nfg = buildGraphToOptimize(); // 没有禁用某些机器人
         if (debug_ && do_optimize)
             SYLAR_LOG_INFO(g_logger)
                 << " milliseconds. Detected " << total_lc_
@@ -101,24 +216,41 @@ namespace cmd
                 << " inliers.";
         return do_optimize;
     }
+    void Pcm::extractNeedOptimizeMap(std::unordered_map<ObservationId, size_t> &num_new_loopclosures,
+                                    std::vector<bool> &output_client)
+    {
+        int len = map_clients_.size();
+        output_client = std::vector<bool>(len,false);
+        for (const auto &[obs_id,num] : num_new_loopclosures)
+        {
+            auto robot_a = obs_id.client_a;
+            auto robot_b = obs_id.client_b;
+
+            int a_map = findAndInsertClient(map_clients_,robot_a);
+            int b_map = findAndInsertClient(map_clients_,robot_b);
+
+            SYLAR_ASSERT2(a_map == b_map,"extractNeedOptimizeMap() a_map与 b_map 不相等");
+            output_client[a_map] = true;
+        }
+    }
 
     FactorGraph Pcm::buildGraphToOptimize()
     {
         FactorGraph output_nfg;
-        output_nfg.add(nfg_odom_);
-        std::unordered_map<ObservationId, Measurements>::iterator it =
-            loop_closures_.begin();
-        while (it != loop_closures_.end())
-        {
-            if (std::find(ignored_prefixes_.begin(),
-                          ignored_prefixes_.end(),
-                          it->first.client_a) == ignored_prefixes_.end() &&
-                std::find(ignored_prefixes_.begin(),
-                          ignored_prefixes_.end(),
-                          it->first.client_b) == ignored_prefixes_.end())
-                output_nfg.add(it->second.consistent_factors);
-            it++;
-        }
+        // output_nfg.add(nfg_odom_);
+        // std::unordered_map<ObservationId, Measurements>::iterator it =
+        //     loop_closures_.begin();
+        // while (it != loop_closures_.end())
+        // {
+        //     if (std::find(ignored_prefixes_.begin(),
+        //                   ignored_prefixes_.end(),
+        //                   it->first.client_a) == ignored_prefixes_.end() &&
+        //         std::find(ignored_prefixes_.begin(),
+        //                   ignored_prefixes_.end(),
+        //                   it->first.client_b) == ignored_prefixes_.end())
+        //         output_nfg.add(it->second.consistent_factors);
+        //     it++;
+        // }
         return output_nfg;
     }
     LoopframeValue Pcm::getRobotOdomValues(const int_t &client_id,
@@ -132,91 +264,100 @@ namespace cmd
         }
         return robot_values;
     }
-    LoopframeValue Pcm::multirobotValueInitialization(LoopframeValue &input_value)
+    /// 纠正两帧之间的位姿并且更新 fix_key
+    std::vector<LoopframeValue> Pcm::multirobotValueInitialization(std::vector<LoopframeValue> &input_value)
     {
-        LoopframeValue initialized_values = input_value;
-        if (robot_order_.size() == 0)
-        {
-            SYLAR_LOG_INFO(g_logger) << "No robot poses received. ";
-            return initialized_values;
-        }
-        // Sort robot order from smallest prefix to larges
-        std::sort(robot_order_.begin(), robot_order_.end());
-        // 1、不优化第一个机器人的 value
-        initialized_values.add(getRobotOdomValues(robot_order_[0]));
-
-        // 2、Start estimating the frame-to-frame transforms between robots
-        // ??？ 如果是在同一个 map 中，但是 a 和 0 之间没有 factor 应该怎么办？
-        // 解决方法：小的向大的看齐，先是以 0 为基准进行调整，然后以 1 为基准调整没有调整的，以此类推，可以达到所有都向 0 看齐
-        std::unordered_set<int_t> record_robot;
-        record_robot.insert(0);
-        for (int_t base_robot = 0; base_robot < robot_order_.size(); base_robot++)
-        {
-            // 只有已经位姿变化你的可以作为 base robot
-            if (record_robot.find(base_robot) == record_robot.end())
+        int len = input_value.size();
+        std::vector<LoopframeValue> result;
+        for(int i=0;i<len;i++){
+            LoopframeValue initialized_values = input_value[i];
+            auto clients = map_clients_[i];
+            if (clients.size() == 0)
             {
+                SYLAR_LOG_WARN(g_logger) << "Map:" << i << ",No robot poses received. ";
+                result.push_back(initialized_values);
                 continue;
             }
-            for (int_t i = 0; i < robot_order_.size(); i++)
+            auto first_robot = *(clients.begin());
+            // 1、不优化第一个机器人的 value
+            initialized_values.add(getRobotOdomValues(first_robot));
+
+            // 2、Start estimating the frame-to-frame transforms between robots
+            // ??？ 如果是在同一个 map 中，但是 a 和 0 之间没有 factor 应该怎么办？
+            // 解决方法：小的向大的看齐，先是以 0 为基准进行调整，然后以 1 为基准调整没有调整的，以此类推，可以达到所有都向 0 看齐
+            std::unordered_set<int_t> record_robot;
+            record_robot.insert(first_robot);
+            for (auto base_robot_it = clients.begin(); base_robot_it != clients.end(); base_robot_it++)
             {
-                if (base_robot == i)
+                auto base_robot = *base_robot_it;
+                // 只有已经位姿变化你的可以作为 base robot
+                if (record_robot.find(base_robot) == record_robot.end())
                 {
                     continue;
                 }
-                const int_t &r_base = robot_order_[base_robot];
-                const int_t &ri = robot_order_[i];
-                ObservationId obs_id(r_base, ri);
-
-                FactorGraph lc_factors =
-                    loop_closures_.at(obs_id).consistent_factors;
-                // 只有和 base robot 有联系且没有调整位姿的才可以调整位姿
-                // ??? 是否可以拓展成和所有base 的平均 trans 呢？
-                if (lc_factors.size() == 0 ||
-                    record_robot.find(i) != record_robot.end())
+                for (auto i_robot_it = clients.begin();i_robot_it != clients.end();i_robot_it++)
                 {
-                    continue;
-                }
-                record_robot.insert(i);
-                TransMatrixVector T_wb_wi_measured;
-                for (auto &factor : lc_factors)
-                {
-                    auto from = factor.m_from_lf;
-                    auto to = factor.m_to_lf;
-                    auto T_tf = factor.m_t_tf;
-                    // 保证 from 是 base
-                    if (from->m_client_id != r_base)
+                    auto i = *i_robot_it;
+                    if (base_robot == i)
                     {
-                        auto tmp = from;
-                        from = to;
-                        to = tmp;
-                        T_tf = T_tf.inverse();
+                        continue;
                     }
-                    auto from_key = GetKey(from->m_client_id, from->m_lf_id);
-                    auto to_key = GetKey(to->m_client_id, to->m_lf_id);
+                    const int_t &r_base = robot_order_[base_robot];
+                    const int_t &ri = robot_order_[i];
+                    ObservationId obs_id(r_base, ri);
 
-                    auto T_wb_from = odom_trajectories_[r_base][from_key];
-                    auto T_wi_to = odom_trajectories_[ri][to_key];
+                    FactorGraph lc_factors =
+                        loop_closures_.at(obs_id).consistent_factors;
+                    // 只有和 base robot 有联系且没有调整位姿的才可以调整位姿
+                    // ??? 是否可以拓展成和所有base 的平均 trans 呢？
+                    if (lc_factors.size() == 0 ||
+                        record_robot.find(i) != record_robot.end())
+                    {
+                        continue;
+                    }
+                    record_robot.insert(i);
+                    TransMatrixVector T_wb_wi_measured;
+                    for (auto &factor : lc_factors)
+                    {
+                        auto from = factor.m_from_lf;
+                        auto to = factor.m_to_lf;
+                        auto T_tf = factor.m_t_tf;
+                        // 保证 from 是 base
+                        if (from->m_client_id != r_base)
+                        {
+                            auto tmp = from;
+                            from = to;
+                            to = tmp;
+                            T_tf = T_tf.inverse();
+                        }
+                        auto from_key = GetKey(from->m_client_id, from->m_lf_id);
+                        auto to_key = GetKey(to->m_client_id, to->m_lf_id);
 
-                    auto T_wb_wi = T_wb_from * T_tf.inverse() * T_wi_to.inverse();
-                    T_wb_wi_measured.push_back(T_wb_wi);
+                        auto T_wb_from = odom_trajectories_[r_base][from_key];
+                        auto T_wi_to = odom_trajectories_[ri][to_key];
+
+                        auto T_wb_wi = T_wb_from * T_tf.inverse() * T_wi_to.inverse();
+                        T_wb_wi_measured.push_back(T_wb_wi);
+                    }
+                    TransMatrixType T_wb_wi_avg = gncRobustPoseAveraging(T_wb_wi_measured);
+                    initialized_values.add(getRobotOdomValues(robot_order_[i], T_wb_wi_avg));
                 }
-                TransMatrixType T_wb_wi_avg = gncRobustPoseAveraging(T_wb_wi_measured);
-                initialized_values.add(getRobotOdomValues(robot_order_[i],T_wb_wi_avg));
             }
+            // 初始化 fix_key
+            auto fix_key = GetKey(*(clients.begin()), 0);
+            initialized_values.setFixKey(fix_key);
+            result.push_back(std::move(initialized_values));
         }
-        // 初始化 fix_key 
-        auto fix_key = GetKey(robot_order_[0],0);
-        initialized_values.setFixKey(fix_key);
-        return initialized_values;
+        return result;
     }
     /// @brief 使用一元边的方式计算平均变换矩阵
-    /// @param input_poses 
-    /// @param rot_sigma 
-    /// @param trans_sigma 
-    /// @return 
+    /// @param input_poses
+    /// @param rot_sigma
+    /// @param trans_sigma
+    /// @return
     TransMatrixType Pcm::gncRobustPoseAveraging(const TransMatrixVector &input_poses,
-                                           const double &rot_sigma = 0.1,
-                                           const double &trans_sigma = 0.5)
+                                                const double &rot_sigma = 0.1,
+                                                const double &trans_sigma = 0.5)
     {
         gtsam::Values initial;
         initial.insert(0, gtsam::Pose3()); // identity pose as initialization
@@ -254,8 +395,7 @@ namespace cmd
         }
         else
         {
-            SYLAR_LOG_WARN(g_logger)<<
-                "Invalid multirobot alignment method in gncRobustPoseAveraging!";
+            SYLAR_LOG_WARN(g_logger) << "Invalid multirobot alignment method in gncRobustPoseAveraging!";
         }
 
         gtsam::Values estimate = gnc.optimize();
@@ -264,7 +404,7 @@ namespace cmd
     }
 
     void Pcm::parseAndIncrementAdjMatrix(FactorGraph &factors,
-                                         LoopframeValue &output_value,
+                                         std::vector<LoopframeValue> &output_value,
                                          std::unordered_map<ObservationId, size_t> &num_new_loopclosure)
     {
         for (size_t i = 0; i < factors.size(); i++)
@@ -275,17 +415,21 @@ namespace cmd
 
             auto from_key = GetKey(from->m_client_id, from->m_lf_id);
             auto to_key = GetKey(to->m_client_id, to->m_lf_id);
+            auto from_client = GetKeyClientID(from_key);
+            auto to_client = GetKeyClientID(to_key);
+            int map_from = findAndInsertClient(map_clients_,from_client);
+            int map_to = findAndInsertClient(map_clients_,to_client);
 
             //  相关帧找不到的不处理
-            if (!output_value.exist(from_key) ||
-                !output_value.exist(to_key))
+            if (!output_value[map_from].exist(from_key) ||
+                !output_value[map_to].exist(to_key))
             {
                 continue;
             }
 
             bool is_valid = false;
             double dist;
-            if (from->m_client_id == to->m_client_id)
+            if (from_client == to_client)
             {
                 // 检查新的同一robot回环是否与先验位姿具有一致性
                 is_valid = isOdomConsistent(new_factor, dist);
@@ -498,9 +642,10 @@ namespace cmd
         return false;
     }
 
-    void Pcm::updateOdom(const LoopEdge &factor, LoopframeValue &output_values)
+    void Pcm::updateOdom(int map_id,const LoopEdge &factor,
+                         std::vector<LoopframeValue> &output_values)
     {
-        nfg_odom_.add(factor);
+        nfg_odom_[map_id].add(factor);
 
         LoopframeKey prev_key = GetKey(factor.m_from_lf->m_client_id, factor.m_from_lf->m_lf_id);
         LoopframeKey cur_key = GetKey(factor.m_to_lf->m_client_id, factor.m_from_lf->m_lf_id);

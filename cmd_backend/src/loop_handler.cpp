@@ -97,21 +97,6 @@ namespace cmd
                 {
                     // 获取找到的回环帧
                     auto matched_frame = m_preocessed_lf[matched_idx];
-                    // 判断两帧之间的距离有没有太远
-                    if (m_mapMgr->getMap(query_frame->m_client_id) == m_mapMgr->getMap(matched_frame->m_client_id))
-                    {
-                        precision_t dis = (query_frame->m_twc.translation() - matched_frame->m_twc.translation()).norm();
-
-                        // 如果很远但信服度很高也会继续执行下去 &&  sc_diff > scan_context_thres_ - 0.08
-                        if (dis > DISTANCE_THRES)
-                        {
-                            SYLAR_LOG_DEBUG(g_logger_sys)
-                                << "[agent id:" << query_frame->m_client_id << ",iid:" << query_frame->m_incoming_id << "]-"
-                                << "[agent id:" << matched_frame->m_client_id << ",iid:" << matched_frame->m_incoming_id << "] "
-                                << "SC: " << sc_diff << " TOO FAR. " << dis;
-                            continue;
-                        }
-                    }
 
                     // calculate the initial tfm_matched_cur from ScanContext
                     // 复原回他们之间由于pca所变化的位姿矩阵

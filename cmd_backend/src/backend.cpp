@@ -12,9 +12,9 @@ namespace cmd
 
     CmdBackend::CmdBackend()
     {
-        m_viewer.reset(new PangolinViewer(VIEWER_WIDTH, VIEWER_HIGH));
-        m_mapmanager.reset(new Mapmanager(m_viewer));
-        m_loop.reset(new LoopHandler(LIDAR_RANGE, SCANCONTEXT_THRES, m_mapmanager));
+        m_viewer = std::make_shared<PangolinViewer>(VIEWER_WIDTH, VIEWER_HIGH);
+        m_mapmanager = std::make_shared<Mapmanager>(m_viewer);
+        m_loop = std::make_shared<LoopHandler>(LIDAR_RANGE, SCANCONTEXT_THRES, m_mapmanager);
         // 开启等待任务线程
         m_backend_thread.reset(new Thread(std::bind(&CmdBackend::Run, this), "backend thread."));
     }

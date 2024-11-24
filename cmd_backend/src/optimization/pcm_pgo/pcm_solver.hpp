@@ -14,22 +14,18 @@ namespace cmd
     class PcmSolver
     {
     public:
-        PcmSolver(const RobustSolverParams &params,std::weak_ptr<Map> weak_map);
+        PcmSolver(const RobustSolverParams &params);
 
         // 插入 factor 并更新
         void insertLoopEdgeAndUpdate(const LoopEdgeVector &les, bool is_optimize);
 
-        void update(FactorGraph &factors, LoopframeValue &value, bool is_optimize);
+        void update(FactorGraph &factors, LoopframeValue &value, bool is_optimize = true);
 
         void convertFactorAndValue(const LoopEdgeVector &les,FactorGraph& factors,LoopframeValue& value);
-        
-        bool addAndCheckIfOptimize(FactorGraph &factors, LoopframeValue &values);
 
         void getAllValueToUpdateMap(LoopframeValue& vals);
 
-        void callOptimize();
-
-        void optimize(MapPtr map);
+        void optimize(std::vector<bool>& need_optimize_idx);
 
         bool checkNeedOptimize();
         
@@ -37,32 +33,25 @@ namespace cmd
 
         void Run();
 
-        void updateDataAfterOptimize(Sim3LoopframeValue& sim3_values);
+        void updateDataAfterOptimize(std::vector<bool>& need_optimize_idx,std::vector<Sim3LoopframeValue>& sim3_values);
 
-        const LoopframeValue& getValue();
+        bool checkIsOptimized(std::vector<LoopframeValue>& values);
 
         MapPtr getMap();
 
-        void lockOptimize();
-        
-        void unlockOptimize();
-
     private:
         std::unique_ptr<OutlierRemoval> outlier_removal_;
-        FactorGraph nfg_;       // 包括里程计和回环的合法 factor
-        LoopframeValue values_; // 所有顶点记录的是 t_cw 的位姿
-        LoopframeKey fix_key_;
-        // Factors and values subjected to change
-        FactorGraph temp_nfg_; 
-        LoopframeValue temp_values_; // 记录的是 ref 的位姿
+        std::vector<FactorGraph> nfg_;       // 包括里程计和回环的合法 factor
+        std::vector<LoopframeValue> values_; // 所有顶点记录的是 t_cw 的位姿
 
         bool optimizing_;
         bool need_optimize_;
+        bool is_optimized_; // view 更新
+        std::unordered_set<int_t> need_optimize_clients_; // 需要优化的client，会累计，重复的会合并
+
         bool solver_running_; // 优化线程
         RWMutexType mutex_; // 读写里面数据的互斥变量
+        std::queue<LoopEdgePtr> factors_buf_;
         MutexType optimize_mutex_;
-
-        // 维护 map 的数据
-        std::weak_ptr<Map> map_;
     };
 }

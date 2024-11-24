@@ -18,10 +18,11 @@ namespace cmd
         virtual size_t getNumOdomFactors() = 0;
         virtual size_t getNumSpecialFactors() = 0;
 
-        virtual bool removeOutliers(const FactorGraph& new_factors,
-                                    const LoopframeValue& new_loopframes,
-                                    FactorGraph *nfg,
-                                    LoopframeValue *values) = 0;
+        virtual bool removeOutliers(const FactorGraph &new_factors,
+                                    const LoopframeValue &new_loopframes,
+                                    std::vector<FactorGraph> *nfg,
+                                    std::vector<LoopframeValue> *values,
+                                    std::vector<bool> *need_optimized_map) = 0;
 
         virtual void saveData(std::string folder_path) {}
 

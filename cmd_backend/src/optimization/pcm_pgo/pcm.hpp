@@ -16,15 +16,16 @@ namespace cmd
         virtual size_t getNumSpecialFactors() override { return 0; }
 
         virtual bool removeOutliers(const FactorGraph &new_factors,
-                                    const LoopframeValue &new_loopframes,
-                                    FactorGraph *nfg,
-                                    LoopframeValue *values) override;
+                             const LoopframeValue &new_loopframes,
+                             std::vector<FactorGraph> *nfg,
+                             std::vector<LoopframeValue> *values,
+                             std::vector<bool> *need_optimized_map) override;
 
-        void updateOdom(const LoopEdge &factor,
-                        LoopframeValue &output_nfg);
+        void updateOdom(int map_id, const LoopEdge &factor,
+                        std::vector<LoopframeValue> &output_values);
 
         void parseAndIncrementAdjMatrix(FactorGraph &factors,
-                                        LoopframeValue &output_value,
+                                        std::vector<LoopframeValue> &output_value,
                                         std::unordered_map<ObservationId, size_t> &num_new_loopclosure);
 
         bool isOdomConsistent(LoopEdge &factor, double &dist);
@@ -46,7 +47,7 @@ namespace cmd
 
         FactorGraph buildGraphToOptimize();
 
-        LoopframeValue multirobotValueInitialization(LoopframeValue &output_value);
+        std::vector<LoopframeValue> multirobotValueInitialization(std::vector<LoopframeValue> &input_value);
 
         LoopframeValue getRobotOdomValues(const int_t &client_id,
                                          const TransMatrixType &T_wb_wc = TransMatrixType());
@@ -55,9 +56,21 @@ namespace cmd
                                const double& rot_sigma = 0.1,
                                const double& trans_sigma = 0.5);
         
+        void extractNeedOptimizeMap(std::unordered_map<ObservationId, size_t> &num_new_loopclosures,
+                                    std::vector<bool> &output_client);
+        
+        void classifyNewLoopframeToMap(const LoopframeValue &new_loopframes,
+                            std::vector<LoopframeValue> *output_values,
+                            std::vector<FactorGraph> *output_nfg);
+        
+        void mergeCheckAndPreform(std::unordered_map<ObservationId, size_t>& new_num_loopclosures,
+                                std::vector<FactorGraph> &output_nfg,
+                                std::vector<LoopframeValue> &output_values);
+
         private:
             PcmParams params_;
-            FactorGraph nfg_odom_;
+            std::vector<FactorGraph> nfg_odom_;
+            std::vector<ClientSet> map_clients_; // 每一个需要优化的 map 的 client
             std::unordered_map<ObservationId, Measurements> loop_closures_;
             std::unordered_map<int_t, LoopframeValue> odom_trajectories_;
             std::vector<ObservationId> loop_closures_in_order_;

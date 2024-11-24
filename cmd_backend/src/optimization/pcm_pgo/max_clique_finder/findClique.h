@@ -27,7 +27,7 @@
 #include <iostream>
 #include <vector>
 
-#include "KimeraRPGO/max_clique_finder/graphIO.h"
+#include "optimization/pcm_pgo/max_clique_finder/graphIO.h"
 
 using namespace std;
 

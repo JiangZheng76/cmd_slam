@@ -18,7 +18,7 @@
 
    http://arxiv.org/abs/1411.7460 */
 
-#include "KimeraRPGO/max_clique_finder/graphIO.h"
+#include "optimization/pcm_pgo/max_clique_finder/graphIO.h"
 
 #include <map>
 #include <string>

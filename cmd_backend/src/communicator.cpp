@@ -70,13 +70,7 @@ namespace cmd
         {
             MsgLoopframePtr msg = m_buf_msg_in.front();
             m_buf_msg_in.pop_front();
-            if (msg->m_is_update_msg)
-            { // 更新帧
-                SYLAR_LOG_INFO(g_logger_sys) << "UPDATE MsgLoopframe.";
-                auto map = m_mapmanager->getMap(msg->m_client_id);
-                map->updateLoopframeFromMsg(msg);
-            }
-            else
+            if (!msg->m_is_update_msg)
             { // 新帧
                 LoopframePtr lf(new Loopframe(msg));
                 // 是最新的帧

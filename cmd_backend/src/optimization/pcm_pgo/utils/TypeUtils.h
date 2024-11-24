@@ -8,6 +8,10 @@
 
 namespace cmd
 {
+  class ClientSet : public std::set<int_t>
+  {
+  public:
+  };
   // using FactorGraph = std::vector<LoopEdge>;
   class FactorGraph : public std::vector<LoopEdge>
   {
@@ -92,13 +96,15 @@ namespace cmd
         Sophus::Sim3d sim3(val.second.matrix());
         auto sim3_wc = sim3.log();
         auto key = val.first;
-        insert({key,sim3_wc});
+        insert({key, sim3_wc});
       }
       fix_key_ = values.getFixKey();
     }
-    LoopframeKey getFixKey(){
+    LoopframeKey getFixKey()
+    {
       return fix_key_;
     }
+
   private:
     LoopframeKey fix_key_;
   };

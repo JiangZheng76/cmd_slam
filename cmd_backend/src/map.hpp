@@ -11,68 +11,6 @@ namespace cmd
         CERES_SIM3 = 0,
         PCM_OUTLIER = 1
     };
-
-    class Map
-    {
-    public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-        int m_mapId;
-        int m_mainId; //  map 中的主 framemanager id
-
-        bool m_changed = false; // map是否得到了更新
-        bool m_optimizing = false;
-        LoopframePtr m_fix_lf = nullptr; // 优化固定帧
-
-        std::set<LoopEdgePtr> m_les;
-        std::unordered_map<uint32_t, FramemanagerPtr> m_fmgrs; // 当前map的 所有framemanager
-
-        PangolinViewerPtr m_viewer;
-
-        /**
-         * PCM_MODE
-         */
-        std::unique_ptr<PcmSolver> solver_;
-
-
-        // OptimizationMode m_opt_mode = OptimizationMode::CERES_SIM3;
-        OptimizationMode m_opt_mode = OptimizationMode::PCM_OUTLIER;
-        std::map<std::pair<int_t,int_t>,int_t> m_last_opt;
-
-        RWMutexType m_mutex;
-
-    public:
-        Map(size_t id,PangolinViewerPtr viewer);
-
-        void setOptimizedMode();
-        void setOptimizingMode();
-
-        RWMutexType& Map::getMutext();
-
-        bool checkIsNeedOptimize(LoopEdgePtr le);
-
-        bool hasAgent(int client_id);
-        LoopframePtr getLoopframe(size_t client_id, size_t kf_id, bool expect_null = false);
-
-        void addLoopEdge(LoopEdgePtr le);
-        void updateLoopframeFromMsg(MsgLoopframePtr msg);
-        void addLoopframe(LoopframePtr lf);
-        void transformMap(const TransMatrixType &Ttc);
-        void mergeMap(MapPtr fuse, LoopEdgePtr le, const TransMatrixType &Tcf);
-        void lockMerge();
-        void unlockMerge();
-        
-        Solver* getSolver();
-
-        bool updateMapAfterOptimize(); // 更新优化之后的效果
-        void updateMapAfterRPGO(const LoopframeValue& values); // PCM 优化之后更新效果
-
-        LoopframeVector getAllLoopframe();
-        LoopEdgeVector getAllLoopEdge();
-
-        void saveMap();
-        std::string dump();
-    };
-
     class Framemanager
     {
     public:
@@ -93,7 +31,7 @@ namespace cmd
 
     public:
         Framemanager(int client_id); // 只有Map才可以创建
-        ~Framemanager();
+        ~Framemanager(){}
 
         // 重置新来帧的 tfm
         // void resetTFMOptimized() { tfm_optimized_cur_ = g2o::SE3Quat(); }
@@ -124,19 +62,21 @@ namespace cmd
         LoopEdgeList m_lc_buf; // from -> to
         bool m_runing = true;
         ThreadPtr m_thread;
-        PangolinViewerPtr m_viewer; // TODO 还没有发送帧
 
         Mapmanager(PangolinViewerPtr viewer = nullptr);
         virtual ~Mapmanager();
 
         void Run();
 
-        MapPtr getMap(int_t clientId);
         bool addLoopframe(LoopframePtr lf);
-        static void MergeMap(MapPtr from_map,MapPtr to_map,LoopEdgePtr le);
-
         bool checkLoopclosureBuf();
+        void checkOptimizeAndViewUpdate();
         void processLoopClosures();
         void createConstrant(LoopframePtr from, LoopframePtr to, TransMatrixType t_tf, precision_t icp_score, precision_t sc_score);
+    private:
+        std::unordered_map<int_t,FramemanagerPtr> fmgrs_;
+        PangolinViewerPtr viewer_;
+        std::unique_ptr<PcmSolver> solver_;
+
     };
 }

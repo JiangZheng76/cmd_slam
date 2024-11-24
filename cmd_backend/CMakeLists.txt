@@ -5,7 +5,7 @@ cmake_policy(SET CMP0048 NEW)
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug)
 endif()
-
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON) 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -march=native")
 set(CMAKE_CXX_STANDARD 17)
@@ -43,15 +43,8 @@ find_package(Pangolin REQUIRED)
 set(EIGEN3_INCLUDE_DIRS /home/sysu/eigen-3.4.0)
 message(${EIGEN3_INCLUDE_DIRS})
 
-set(GTSAM_INCLUDE_DIR /home/sysu/gtsam)
-set(GTSAM_LIB /home/sysu/gtsam/build/gtsam/libgtsam.so.4.3a0)
-message(${GTSAM_INCLUDE_DIR})
-
-# set(PCM_PATH /home/sysu/cmd_ws/src/cmd-slam/cmd_backend/thrid-party/Kimera-RPGO)
-add_subdirectory(thrid-party/Kimera-RPGO)
-find_library(PCM_LIBRARY KimeraRPGO ${PCM_PATH}/build)
-
 set(PCM_INCLUDE_DIRS ${PCM_PATH}/include())
+add_subdirectory(${CMAKE_SOURCE_DIR}/src/optimization/pcm_pgo)
 
 include_directories(
     ${PCM_INCLUDE_DIRS}
@@ -65,8 +58,10 @@ include_directories(
 set(LIBS
     fmt
     pthread
+    rpgo_max_clique
     ${GTSAM_LIB}
     yaml-cpp
+    pcm_solver
     ${PCM_LIBRARY}
     ${PCL_LIBRARIES}
     ${CERES_LIBRARIES}
@@ -84,24 +79,12 @@ set(BACKEND_SOURCE_FILES
     src/loop_closure/scancontext.cpp
 
     src/optimization/cmd_sim3.cpp
-    src/optimization/optimization.cpp
-
-    src/pcm/pcm_solver.cpp
+    src/optimization/pcm_pgo/pcm_solver.cpp
+    src/optimization/pcm_pgo/pcm.cpp
 
     src/visualization/agent_display.cpp
     src/visualization/pangolin_viewer.cpp
     src/visualization/loopframe_display.cpp
-
-    # src/KimeraRPGO/Logger.cpp
-    # src/KimeraRPGO/RobustSolver.cpp
-    # src/KimeraRPGO/GenericSolver.cpp
-
-    # src/KimeraRPGO/utils/GraphUtils.cpp
-
-    # src/KimeraRPGO/max_clique_finder/findClique.cpp
-    # src/KimeraRPGO/max_clique_finder/findCliqueHeu.cpp
-    # src/KimeraRPGO/max_clique_finder/graphIO.cpp
-    # src/KimeraRPGO/max_clique_finder/utils.cpp
 )
 
 cs_add_library(cmd_backend ${BACKEND_SOURCE_FILES})
