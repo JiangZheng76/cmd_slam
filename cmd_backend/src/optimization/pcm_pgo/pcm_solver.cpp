@@ -236,6 +236,12 @@ namespace cmd
         }
         return false;
     }
+    void PcmSolver::lockOptimize(){
+        optimize_mutex_.lock();
+    }
+    void PcmSolver::unlockOptimize(){
+        optimize_mutex_.unlock();
+    }
     /// @brief 优化线程
     void PcmSolver::Run()
     {

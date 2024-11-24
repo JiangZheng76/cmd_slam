@@ -58,6 +58,10 @@ namespace cmd
         void addLoopframe(LoopframePtr lf);
         void transformMap(const TransMatrixType &Ttc);
         void mergeMap(MapPtr fuse, LoopEdgePtr le, const TransMatrixType &Tcf);
+        void lockMerge();
+        void unlockMerge();
+        
+        Solver* getSolver();
 
         bool updateMapAfterOptimize(); // 更新优化之后的效果
         void updateMapAfterRPGO(const LoopframeValue& values); // PCM 优化之后更新效果

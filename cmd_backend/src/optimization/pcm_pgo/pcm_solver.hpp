@@ -43,6 +43,10 @@ namespace cmd
 
         MapPtr getMap();
 
+        void lockOptimize();
+        
+        void unlockOptimize();
+
     private:
         std::unique_ptr<OutlierRemoval> outlier_removal_;
         FactorGraph nfg_;       // 包括里程计和回环的合法 factor

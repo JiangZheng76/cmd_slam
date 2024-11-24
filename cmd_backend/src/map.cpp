@@ -434,11 +434,39 @@ namespace cmd
         m_runing = false;
         m_thread->join();
     }
+    struct MapMergeLockTool{
+        MapMergeLockTool(MapPtr from_map,MapPtr to_map){
+            from = from_map;
+            to = to_map;
+            from_map->lockMerge();
+            to_map->lockMerge();
+        }
+        ~MapMergeLockTool(){
+            to->unlockMerge();
+            from->unlockMerge();
+        }
+        MapPtr from;
+        MapPtr to;
+    };
+    void Map::lockMerge(){
+        solver_->lockOptimize();
+        m_mutex.wrlock();
+    }
+    void Map::unlockMerge(){
+        m_mutex.unlock();
+        solver_->unlockOptimize();
+    }
+    Solver* Map::getSolver(){
+        return solver_;    
+    }
     void Mapmanager::MergeMap(MapPtr from_map,MapPtr to_map,LoopEdgePtr le){
         // 确保两个 map 都没有在优化中
-        MutexType::Lock from_lk(from_map->getMutext);
         // 需要给两个 map 上写锁
+        MapMergeLockTool lkt(from_map,to_map);
         // 需要将 pcm 原有的 pair 插入进去
+        // 先将原有value 和 factor 并入，最后再将 le 并入
+        PcmSolver* from_solver = from_map->getSolver();
+
         // 执行一次优化
         // TODO 实现合并处理
     }
