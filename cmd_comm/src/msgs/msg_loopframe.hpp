@@ -1,16 +1,14 @@
 #pragma once
-#include "typedefs.hpp"
-
 // SERIALIZATION
+#include <cereal/types/memory.hpp>
+#include <cereal/cereal.hpp>
 #include <cereal/access.hpp>
 #include <cereal/archives/binary.hpp>
-#include <cereal/cereal.hpp>
-#include <cereal/types/base_class.hpp>
 #include <cereal/types/concepts/pair_associative_container.hpp>
-#include <cereal/types/memory.hpp>
-#include <cereal/types/polymorphic.hpp>
 #include <cereal/types/utility.hpp>
 #include <cereal/types/vector.hpp>
+
+#include "typedefs.hpp"
 
 namespace cmd {
 
@@ -206,17 +204,5 @@ void serialize(Archive &ar, cmd::TransMatrixType &trans) {
   ar(binary_data(trans.data(),
                  static_cast<std::size_t>(rows * cols * sizeof(double))));
 }
-// template <class Archive>
-// void serialize(Archive &ar, cmd::EigenMatrix &trans)
-// {
-//     // const std::int32_t rows = static_cast<std::int32_t>(matrix.rows());
-//     // const std::int32_t cols = static_cast<std::int32_t>(matrix.cols());
-//     // ar(binary_data(trans.data(), static_cast<std::size_t>(rows * cols *
-//     sizeof(double))));
-//     ar(binary_data(trans(0,0),trans(0,1),trans(0,2),trans(0,3)
-//                     ,trans(1,0),trans(1,1),trans(1,2),trans(1,3)
-//                     ,trans(2,0),trans(2,1),trans(2,2),trans(2,3)
-//                     ,trans(3,0),trans(3,1),trans(3,2),trans(3,3));
-// }
 
 } /* namespace cereal */

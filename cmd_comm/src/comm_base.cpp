@@ -33,6 +33,7 @@ void CommunicatorBase::serialize(MsgLoopframePtr lf) {
 
 // Message passing
 static auto GetInAddr(struct sockaddr *sa) -> void * {
+  return nullptr;
 }  // get sockaddr, IPv4 or IPv6: 暂时不需要
 
 /// @brief 客户端连接服务器

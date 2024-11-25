@@ -10,8 +10,8 @@
 #include <thread>
 
 // cmd
-#include "msgs/msg_loopframe.hpp"
 #include "typedefs.hpp"
+#include "msgs/msg_loopframe.hpp"
 
 #define ContainerSize 10
 

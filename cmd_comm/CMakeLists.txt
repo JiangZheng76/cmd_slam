@@ -29,11 +29,12 @@ set(EIGEN3_INCLUDE_DIRS /home/sysu/eigen-3.4)
 # find_package(Eigen3 REQUIRED)
 find_package(Sophus REQUIRED)
 find_package(fmt REQUIRED)
-
-find_library(SYLAR mysylar ${PROJECT_SOURCE_DIR}/thrid-party/mysylar/lib/)
+add_subdirectory(${PROJECT_SOURCE_DIR}/thrid-party/cereal)
+add_subdirectory(${PROJECT_SOURCE_DIR}/thrid-party/mysylar)
 set(LIBS
-    ${SYLAR}
+    mysylar
     pthread
+    cereal
     fmt::fmt
 )
 include_directories(
