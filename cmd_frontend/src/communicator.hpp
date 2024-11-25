@@ -9,24 +9,22 @@
 
 namespace cmd {
 
+class FrontEndComm : public CommunicatorBase {
+ public:
+  // EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  FrontEndComm(std::string ip, std::string port);
+  virtual ~FrontEndComm() {}
 
-class FrontEndComm : public CommunicatorBase
-    {
-    public:
-        // EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-        FrontEndComm(std::string ip,std::string port);
-        virtual ~FrontEndComm(){}
-        
-        virtual void Run() override;
-        virtual void processRecvMsgLoopframe() override;
+  virtual void Run() override;
+  virtual void processRecvMsgLoopframe() override;
 
-        virtual void processSendMsgLoopframe() override;
+  virtual void processSendMsgLoopframe() override;
 
-        void publishMsg(MsgLoopframePtr msg);
+  void publishMsg(MsgLoopframePtr msg);
 
-    public:
-        MsgLoopframeList m_process_lfs;
-        size_t m_ref_num = 1;
+ public:
+  MsgLoopframeList m_process_lfs;
+  size_t m_ref_num = 1;
 };
 
-} //end ns
+}  // namespace cmd

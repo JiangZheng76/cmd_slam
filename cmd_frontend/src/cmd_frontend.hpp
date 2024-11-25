@@ -1,3 +1,3 @@
-//#define EIGEN_DONT_ALIGN
-#include "typedefs_frontend.hpp"
+// #define EIGEN_DONT_ALIGN
 #include "communicator.hpp"
+#include "typedefs_frontend.hpp"

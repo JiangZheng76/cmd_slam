@@ -116,8 +116,7 @@ struct RobustSolverParams {
    * lcThreshold: max allowable M distance deviation between pairs of
    * measurements
    */
-  void setPcm2DParams(double odomThreshold,
-                      double lcThreshold,
+  void setPcm2DParams(double odomThreshold, double lcThreshold,
                       Verbosity verbos = Verbosity::UPDATE) {
     outlierRemovalMethod = OutlierRemovalMethod::PCM2D;
     pcm_params.odom_threshold = odomThreshold;
@@ -131,8 +130,7 @@ struct RobustSolverParams {
    * lcThreshold: max allowable M distance deviation between pairs of
    * measurements
    */
-  void setPcm3DParams(double odomThreshold,
-                      double lcThreshold,
+  void setPcm3DParams(double odomThreshold, double lcThreshold,
                       Verbosity verbos = Verbosity::UPDATE) {
     outlierRemovalMethod = OutlierRemovalMethod::PCM3D;
     pcm_params.odom_threshold = odomThreshold;
@@ -145,8 +143,7 @@ struct RobustSolverParams {
    * transThreshold: Estimated max drift in translation per node (in meters)
    * rotThreshold: Estimated max drift in rotation per node (in radians)
    */
-  void setPcmSimple2DParams(double transThreshold,
-                            double rotThreshold,
+  void setPcmSimple2DParams(double transThreshold, double rotThreshold,
                             Verbosity verbos = Verbosity::UPDATE) {
     outlierRemovalMethod = OutlierRemovalMethod::PCM_Simple2D;
     pcm_params.odom_trans_threshold = transThreshold;
@@ -161,8 +158,7 @@ struct RobustSolverParams {
    * transThreshold: Estimated max drift in translation per node (in meters)
    * rotThreshold: Estimated max drift in rotation per node (in radians)
    */
-  void setPcmSimple3DParams(double transThreshold,
-                            double rotThreshold,
+  void setPcmSimple3DParams(double transThreshold, double rotThreshold,
                             Verbosity verbos = Verbosity::UPDATE) {
     outlierRemovalMethod = OutlierRemovalMethod::PCM_Simple3D;
     pcm_params.odom_trans_threshold = transThreshold;
@@ -177,10 +173,8 @@ struct RobustSolverParams {
    * transThreshold: Estimated max drift in translation per node (in meters)
    * rotThreshold: Estimated max drift in rotation per node (in radians)
    */
-  void setPcmSimple2DParams(double transOdomThreshold,
-                            double rotOdomThreshold,
-                            double transPcmThreshold,
-                            double rotPcmThreshold,
+  void setPcmSimple2DParams(double transOdomThreshold, double rotOdomThreshold,
+                            double transPcmThreshold, double rotPcmThreshold,
                             Verbosity verbos = Verbosity::UPDATE) {
     outlierRemovalMethod = OutlierRemovalMethod::PCM_Simple2D;
     pcm_params.odom_trans_threshold = transOdomThreshold;
@@ -195,10 +189,8 @@ struct RobustSolverParams {
    * transThreshold: Estimated max drift in translation per node (in meters)
    * rotThreshold: Estimated max drift in rotation per node (in radians)
    */
-  void setPcmSimple3DParams(double transOdomThreshold,
-                            double rotOdomThreshold,
-                            double transPcmThreshold,
-                            double rotPcmThreshold,
+  void setPcmSimple3DParams(double transOdomThreshold, double rotOdomThreshold,
+                            double transPcmThreshold, double rotPcmThreshold,
                             Verbosity verbos = Verbosity::UPDATE) {
     outlierRemovalMethod = OutlierRemovalMethod::PCM_Simple3D;
     pcm_params.odom_trans_threshold = transOdomThreshold;
@@ -211,12 +203,9 @@ struct RobustSolverParams {
   /*! \brief one way of setting GNC parameters (confidence threshold + others)
    */
   void setGncInlierCostThresholdsAtProbability(
-      const double& alpha,
-      const size_t& max_iterations = 100,
-      const double& mu_step = 1.4,
-      const double& rel_cost_tol = 1e-5,
-      const double& weight_tol = 1e-4,
-      const bool& fix_prev_inliers = false,
+      const double& alpha, const size_t& max_iterations = 100,
+      const double& mu_step = 1.4, const double& rel_cost_tol = 1e-5,
+      const double& weight_tol = 1e-4, const bool& fix_prev_inliers = false,
       const bool& bias_odom = false) {
     use_gnc_ = true;
     gnc_params.gnc_threshold_mode_ = GncParams::GncThresholdMode::PROBABILITY;
@@ -298,4 +287,4 @@ struct RobustSolverParams {
   bool use_gnc_;
 };
 
-}  // namespace KimeraRPGO
+}  // namespace cmd

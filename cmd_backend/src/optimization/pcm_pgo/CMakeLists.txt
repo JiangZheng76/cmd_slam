@@ -12,7 +12,7 @@ include_directories(
     ${GTSAM_INCLUDE_DIR}
     ${PCM_INCLUDE_FILE}
 )
-
+find_package(fmt REQUIRED)
 add_library(pcm_solver
     ${CMAKE_CURRENT_SOURCE_DIR}/pcm_solver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/pcm.cpp
@@ -24,6 +24,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/utils)
 set(PCM_LIBS
     ${GTSAM_LIB}
     rpgo_max_clique
+    fmt
 )
 
 target_include_directories(pcm_solver PUBLIC ${PROJECT_SOURCE_DIR}/include)

@@ -1,22 +1,3 @@
-/* Description:  a library for finding the maximum clique of a graph
-
-
-   Authors: Bharath Pattabiraman and Md. Mostofa Ali Patwary
-            EECS Department, Northwestern University
-            email: {bpa342,mpatwary}@eecs.northwestern.edu
-
-   Copyright, 2014, Northwestern University
-   See COPYRIGHT notice in top-level directory.
-
-   Please site the following publication if you use this package:
-   Bharath Pattabiraman, Md. Mostofa Ali Patwary, Assefaw H. Gebremedhin2,
-
-   Wei-keng Liao, and Alok Choudhary.
-   "Fast Algorithms for the Maximum Clique Problem on Massive Graphs with
-   Applications to Overlapping Community Detection"
-
-   http://arxiv.org/abs/1411.7460 */
-
 #include "optimization/pcm_pgo/max_clique_finder/findClique.h"
 
 #include <vector>
@@ -28,11 +9,8 @@ int pruned3;
 int pruned5;
 
 /* Algorithm 2: CLIQUE: Recursive Subroutine of algorithm 1. */
-void maxCliqueHelper(CGraphIO* gio,
-                     vector<int>* U,
-                     size_t sizeOfClique,
-                     size_t* maxClq,
-                     vector<int>* max_clique_data_inter) {
+void maxCliqueHelper(CGraphIO* gio, vector<int>* U, size_t sizeOfClique,
+                     size_t* maxClq, vector<int>* max_clique_data_inter) {
   int iPos, index = 0, maxClq_prev;
   vector<int>* ptrVertex = gio->GetVerticesPtr();
   vector<int>* ptrEdge = gio->GetEdgesPtr();
@@ -67,8 +45,8 @@ void maxCliqueHelper(CGraphIO* gio,
 
     maxClq_prev = *maxClq;
 
-    maxCliqueHelper(
-        gio, &U_new, sizeOfClique + 1, maxClq, max_clique_data_inter);
+    maxCliqueHelper(gio, &U_new, sizeOfClique + 1, maxClq,
+                    max_clique_data_inter);
 
     if (*maxClq > maxClq_prev) max_clique_data_inter->push_back(index);
 

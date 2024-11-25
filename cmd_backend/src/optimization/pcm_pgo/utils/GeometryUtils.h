@@ -115,7 +115,7 @@ struct PoseWithCovariance {
     //   covar = temp;
     // }
     // covariance_matrix = covar;
-    covariance_matrix = Eigen::Matrix<double,6,6>::Identity() * 0.1;
+    covariance_matrix = Eigen::Matrix<double, 6, 6>::Identity() * 0.1;
   }
 
   /* method to combine two poses (along with their covariances) */
@@ -224,15 +224,14 @@ struct PoseWithNode {
   /* construct from gtsam between factor  --------------------- */
   explicit PoseWithNode(const gtsam::BetweenFactor<T>& between_factor) {
     pose = between_factor.measured();
-    gtsam::Matrix covar =
-        factor_pointer_cast<gtsam::noiseModel::Gaussian>(
-            between_factor.noiseModel())
-            ->covariance();
+    gtsam::Matrix covar = factor_pointer_cast<gtsam::noiseModel::Gaussian>(
+                              between_factor.noiseModel())
+                              ->covariance();
 
     // prevent propagation of nan values in the edge case
-    //const int dim = getDim<T>();
+    // const int dim = getDim<T>();
     const int r_dim = getRotationDim<T>();
-    //const int t_dim = getTranslationDim<T>();
+    // const int t_dim = getTranslationDim<T>();
     rotation_info = true;
     if (std::isnan(covar.block(0, 0, r_dim, r_dim).trace())) {
       rotation_info = false;
@@ -292,4 +291,4 @@ struct PoseWithNode {
   }
 };
 
-}  // namespace KimeraRPGO
+}  // namespace cmd

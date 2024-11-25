@@ -1,23 +1,3 @@
-/*   Description:  an I/O library for reading a graph
-
-
-
-   Authors: Md. Mostofa Ali Patwary and Bharath Pattabiraman
-            EECS Department, Northwestern University
-            email: {mpatwary,bpa342}@eecs.northwestern.edu
-
-   Copyright, 2014, Northwestern University
-   See COPYRIGHT notice in top-level directory.
-
-   Please site the following publication if you use this package:
-   Bharath Pattabiraman, Md. Mostofa Ali Patwary, Assefaw H. Gebremedhin2,
-
-   Wei-keng Liao, and Alok Choudhary.
-   "Fast Algorithms for the Maximum Clique Problem on Massive Graphs with
-   Applications to Overlapping Community Detection"
-
-   http://arxiv.org/abs/1411.7460 */
-
 #include "optimization/pcm_pgo/max_clique_finder/graphIO.h"
 
 #include <map>
@@ -74,20 +54,14 @@ bool CGraphIO::ReadMatrixMarketAdjacencyGraph(string s_InputFile,
   getline(in, line);
   strcpy(data, line.c_str());
 
-  if (sscanf(data,
-             "%s %s %s %s %s",
-             banner,
-             mtx,
-             crd,
-             data_type,
+  if (sscanf(data, "%s %s %s %s %s", banner, mtx, crd, data_type,
              storage_scheme) != 5) {
     cout << "Matrix file banner is missing!!!" << endl;
     return false;
   }
 
   // intersted about the forth part
-  for (p = data_type; *p != '\0'; *p = tolower(*p), p++)
-    ;
+  for (p = data_type; *p != '\0'; *p = tolower(*p), p++);
 
   if (strcmp(data_type, "pattern") == 0) b_getValue = false;
 
@@ -174,8 +148,8 @@ bool CGraphIO::ReadMatrixMarketAdjacencyGraph(string s_InputFile,
 
   if (b_getValue) {
     for (int i = 0; i < row; i++) {
-      m_vd_Values.insert(
-          m_vd_Values.end(), valueList[i].begin(), valueList[i].end());
+      m_vd_Values.insert(m_vd_Values.end(), valueList[i].begin(),
+                         valueList[i].end());
     }
   }
 

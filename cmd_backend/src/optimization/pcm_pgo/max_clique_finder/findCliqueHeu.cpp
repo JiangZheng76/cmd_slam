@@ -1,28 +1,10 @@
-/* Description:  a library for finding the maximum clique from a graph
-
-
-
-   Authors: Md. Mostofa Ali Patwary and Bharath Pattabiraman
-            EECS Department, Northwestern University
-            email: {mpatwary,bpa342}@eecs.northwestern.edu
-
-   Copyright, 2014, Northwestern University
-   See COPYRIGHT notice in top-level directory.
-
-   Please site the following publication if you use this package:
-   Bharath Pattabiraman, Md. Mostofa Ali Patwary, Assefaw H. Gebremedhin2,
-
-   Wei-keng Liao, and Alok Choudhary.
-   "Fast Algorithms for the Maximum Clique Problem on Massive Graphs with
-   Applications to Overlapping Community Detection"
-
-   http://arxiv.org/abs/1411.7460 */
-
 #include <stdlib.h>
 #include <sys/time.h>
 #include <unistd.h>
+
 #include <cstddef>
 #include <vector>
+
 #include "findClique.h"
 
 namespace FMC {
@@ -47,8 +29,7 @@ int maxCliqueHeu(CGraphIO* gio, vector<int>* max_clique_data) {
 
   // compute the max clique for each vertex
   for (size_t iCandidateVertex = 0;
-       iCandidateVertex < p_v_i_Vertices->size() - 1;
-       iCandidateVertex++) {
+       iCandidateVertex < p_v_i_Vertices->size() - 1; iCandidateVertex++) {
     // Pruning 1
     if (maxClq > ((*p_v_i_Vertices)[iCandidateVertex + 1] -
                   (*p_v_i_Vertices)[iCandidateVertex])) {
@@ -116,8 +97,7 @@ int maxCliqueHeu(CGraphIO* gio, vector<int>* max_clique_data) {
   return maxClq;
 }
 
-int maxCliqueHeuIncremental(CGraphIO* gio,
-                            size_t num_new_lc,
+int maxCliqueHeuIncremental(CGraphIO* gio, size_t num_new_lc,
                             size_t prev_maxclique_size,
                             vector<int>* max_clique_data) {
   vector<int>* p_v_i_Vertices = gio->GetVerticesPtr();
@@ -139,8 +119,7 @@ int maxCliqueHeuIncremental(CGraphIO* gio,
   // compute the max clique for each vertex
   // TODO tricky indexing ...
   for (size_t iCandidateVertex = p_v_i_Vertices->size() - num_new_lc - 1;
-       iCandidateVertex < p_v_i_Vertices->size() - 1;
-       iCandidateVertex++) {
+       iCandidateVertex < p_v_i_Vertices->size() - 1; iCandidateVertex++) {
     // Pruning 1
     if (maxClq > ((*p_v_i_Vertices)[iCandidateVertex + 1] -
                   (*p_v_i_Vertices)[iCandidateVertex])) {

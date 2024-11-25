@@ -1,20 +1,20 @@
 #pragma once
 #include <Eigen/Core>
-#include "typedefs_backend.hpp"
-#include "loopframe.hpp"
-// #include <codsv/codsv_base/typedefs_base.hpp>
-// #include <codsv/codsv_backend/loopframe_be.hpp>
 #include <vector>
 
-namespace cmd{
+#include "loopframe.hpp"
+#include "typedefs_backend.hpp"
+
+namespace cmd {
 #define FLANN_NN 3
 #define LOOP_MARGIN 100
 #define RINGKEY_THRES 0.1
 /// @brief [a]利用ringkey 快速搜索候选关键帧的id
-/// [b] ** 搜索完毕之后 将倒数第LOOP_MARGIN帧的数据加入到候选搜索帧中，最新的先不添加进去在ringkey_queue中暂存起来。也就是说，回环检测的最近距离的匹配帧是LOOP_MARGIN帧之前
-/// @param ringkey 
-/// @param ringkeys 
-/// @param candidates 
+/// [b] ** 搜索完毕之后
+/// 将倒数第LOOP_MARGIN帧的数据加入到候选搜索帧中，最新的先不添加进去在ringkey_queue中暂存起来。也就是说，回环检测的最近距离的匹配帧是LOOP_MARGIN帧之前
+/// @param ringkey
+/// @param ringkeys
+/// @param candidates
 inline void search_ringkey(const flann::Matrix<float> &ringkey,
                            flann::Index<flann::L2<float>> *ringkeys,
                            std::vector<int> &candidates) {
@@ -33,7 +33,8 @@ inline void search_ringkey(const flann::Matrix<float> &ringkey,
   }
 
   // store ringkey in waiting queue of size LOOP_MARGIN
-  // 搜索完毕之后 将倒数第LOOP_MARGIN帧的数据加入到候选搜索帧中，最新的先不添加进去在ringkey_queue中暂存起来。
+  // 搜索完毕之后
+  // 将倒数第LOOP_MARGIN帧的数据加入到候选搜索帧中，最新的先不添加进去在ringkey_queue中暂存起来。
   int r_cols = ringkey.cols;
   // 帧id的下标
   static int queue_idx = 0;
@@ -52,16 +53,16 @@ inline void search_ringkey(const flann::Matrix<float> &ringkey,
   queue_idx++;
 }
 /// @brief [a]遍历所有候选帧的sc signature 。
-/// [b] scancontext的格子对齐 ，然后计算齐之间的距离。（两个scancontext之间的距离为：对应格子的最大高度（已经进行了归一化处理）相乘的和）
+/// [b] scancontext的格子对齐
+/// ，然后计算齐之间的距离。（两个scancontext之间的距离为：对应格子的最大高度（已经进行了归一化处理）相乘的和）
 /// [c]返回距离最小的候选帧id和距离
-/// @param signature 
+/// @param signature
 /// @param loop_frames 所有agent的所有帧
 /// @param candidates 候选帧
-/// @param sc_width 
+/// @param sc_width
 /// @param res_idx {out}
 /// @param res_diff {out}
-inline void search_sc(SigType &signature,
-                      const LoopframeVector &loop_frames,
+inline void search_sc(SigType &signature, const LoopframeVector &loop_frames,
                       const std::vector<int> &candidates, int sc_width,
                       int &res_idx, float &res_diff) {
   // candidates[0]在快速检测的时候最相近，所以理论上也是最相近的
@@ -95,5 +96,4 @@ inline void search_sc(SigType &signature,
     }
   }
 }
-}
-
+}  // namespace cmd

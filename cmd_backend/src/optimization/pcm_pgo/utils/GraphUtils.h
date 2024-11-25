@@ -1,13 +1,11 @@
-// Authors: Yun Chang
-
 #pragma once
 
+#include <gtsam/inference/Symbol.h>
+
+#include <Eigen/Dense>
 #include <map>
 #include <unordered_map>
 #include <vector>
-
-#include <gtsam/inference/Symbol.h>
-#include <Eigen/Dense>
 
 namespace cmd {
 
@@ -18,8 +16,7 @@ int findMaxCliqueHeu(const Eigen::MatrixXd& adjMatrix,
                      std::vector<int>* max_clique);
 
 int findMaxCliqueHeuIncremental(const Eigen::MatrixXd adjMatrix,
-                                size_t num_new_lc,
-                                size_t prev_maxclique_size,
+                                size_t num_new_lc, size_t prev_maxclique_size,
                                 std::vector<int>* max_clique);
 
 /** \struct Trajectory
@@ -60,4 +57,4 @@ struct Trajectory {
   inline gtsam::Key getStartKey() { return poses.begin()->first; }
 };
 
-}  // namespace KimeraRPGO
+}  // namespace cmd
