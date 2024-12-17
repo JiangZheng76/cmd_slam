@@ -79,6 +79,7 @@ void PcmSolver::updateDataAfterOptimize(
     std::vector<bool> &need_optimize_idx,
     std::vector<Sim3LoopframeValue> &full_sim3_values) {
   int len = need_optimize_idx.size();
+  int same_value_nums = 0, diff_value_nums = 0;
   for (int i = 0; i < len; i++) {
     if (!need_optimize_idx[i]) {
       continue;
@@ -99,7 +100,14 @@ void PcmSolver::updateDataAfterOptimize(
       if (record.find(client) == record.end() || record[client].first < id) {
         record[client] = {id, values[key]};
       }
-      values.insert({key, twc});
+      same_value_nums += (values[key].matrix() == twc.matrix());
+      diff_value_nums += (values[key].matrix() != twc.matrix());
+      values[key] = twc;
+    }
+    if (debug()) {
+      SYLAR_LOG_DEBUG(g_logger_sys)
+          << "same value nums : " << same_value_nums
+          << "diff value nums : " << diff_value_nums << " total nums : " << len;
     }
     // 更新优化过程中新进来的帧
     for (auto &client_id_pose : record) {
@@ -117,6 +125,7 @@ void PcmSolver::updateDataAfterOptimize(
         t_w_prev = old_t_wc;  // 循环用作更新下一个
       }
     }
+    is_optimized_ = true;
   }
 }
 /// @brief 执行优化主函数
@@ -155,7 +164,7 @@ void PcmSolver::optimize(std::vector<bool> &need_optimize_idx) {
     ceres::LocalParameterization *local_pose_param = new Sim3Parameterization();
 
     auto fix_key = full_value.getFixKey();
-    if(full_value.find(fix_key) == full_value.end()){
+    if (full_value.find(fix_key) == full_value.end()) {
       SYLAR_ASSERT(false);
     }
     auto fix_pose = full_value[fix_key];
@@ -199,12 +208,14 @@ void PcmSolver::optimize(std::vector<bool> &need_optimize_idx) {
 
     ceres::Solver::Summary summary;
     ceres::Solve(solver_options, &problem, &summary);
+    if (debug()) {
+      // SYLAR_LOG_DEBUG(g_logger_sys) << summary.FullReport();
+    }
   }
   {
     RWMutexType::WriteLock lk(mutex_);
     // 更新数据
     updateDataAfterOptimize(need_optimize_idx, full_values);
-    is_optimized_ = true;
     SYLAR_LOG_INFO(g_logger_sys) << "Finish Optimize.";
   }
 }

@@ -41,8 +41,11 @@
 #define SCALE_ERROR_SCALE 0.1
 
 namespace cmd {
-    bool debug_ = true;
+inline bool debug() {
+  static bool debug_ = true;
+  return debug_;
 }
+}  // namespace cmd
 
 namespace cmd {
 

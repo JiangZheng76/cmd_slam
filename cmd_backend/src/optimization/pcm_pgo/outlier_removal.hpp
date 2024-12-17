@@ -25,8 +25,6 @@ class OutlierRemoval {
 
   virtual void saveData(std::string folder_path) {}
 
-  void setQuiet() { debug_ = false; }
-
   void logOutput(const std::string &output_folder) {
     log_output_ = true;
     log_folder_ = output_folder;
@@ -58,7 +56,7 @@ class OutlierRemoval {
                                             FactorGraph *updated_factors) {}
 
  protected:
-  // bool debug_ = true;
+  // bool debug() = true;
   bool log_output_ = false;
   std::string log_folder_;
 };

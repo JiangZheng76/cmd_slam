@@ -146,7 +146,6 @@ Mapmanager::~Mapmanager() {
 void Mapmanager::Run() {
   SYLAR_LOG_INFO(g_logger_sys) << "--> START map manager ";
   while (m_runing) {
-    checkOptimizeAndViewUpdate();
     if (checkLoopclosureBuf()) {
       processLoopClosures();
     }
@@ -159,7 +158,9 @@ void Mapmanager::checkOptimizeAndViewUpdate() {
   std::vector<LoopframePtr> update_lfs;
   if (solver_->checkIsOptimized(full_values)) {
     update_lfs.reserve(full_values.front().size() * 10);
+    int map_id = 0;
     for (const auto &values : full_values) {
+      int same_value_nums = 0, diff_value_nums = 0;
       for (const auto &[key, pose] : values) {
         auto client = GetKeyClientID(key);
         auto id = GetKeyLoopframeID(key);
@@ -175,12 +176,18 @@ void Mapmanager::checkOptimizeAndViewUpdate() {
           SYLAR_ASSERT(false);
         }
         auto lf = fmgrs_[client]->getLoopframeByKFId(id);
+        same_value_nums += (lf->m_twc.matrix() == pose.matrix());
+        diff_value_nums += (lf->m_twc.matrix() != pose.matrix());
+        lf->m_twc = pose;
         update_lfs.push_back(lf);
       }
+      if (debug()) {
+        SYLAR_LOG_DEBUG(g_logger_sys)
+            << "map id " << map_id++ << ",same_value_nums:" << same_value_nums
+            << ",diff_value_nums:" << diff_value_nums
+            << ",total values:" << values.size();
+      }
     }
-    if (debug_)
-      SYLAR_LOG_DEBUG(g_logger_sys)
-          << "update Loopframe viewer size:" << update_lfs.size();
     viewer_->showLoopframes(update_lfs);
   }
   return;
@@ -190,13 +197,14 @@ void Mapmanager::checkOptimizeAndViewUpdate() {
 /// @param lf
 /// @return
 bool Mapmanager::addLoopframe(LoopframePtr lf) {
-  // SYLAR_LOG_DEBUG(g_logger_sys) << "接收到新 Loopframe\n"<< lf->dump();
+  checkOptimizeAndViewUpdate();  // 插入更新优化的帧，防止处理同步的问题
   auto client = lf->m_client_id;
   if (fmgrs_.find(client) == fmgrs_.end()) {
     FramemanagerPtr fmgr = std::make_shared<Framemanager>(client);
     fmgrs_.insert({fmgr->m_clientId, fmgr});
   }
-  fmgrs_[client]->addLoopframe(lf);
+  auto &fmgr = fmgrs_[client];
+  fmgr->addLoopframe(lf);
 
   // 添加到 pcm 里面
   LoopEdgeVector pcm_les;
@@ -219,7 +227,7 @@ void Mapmanager::processLoopClosures() {
     m_lc_buf.pop_front();
   }
   solver_->insertLoopEdgeAndUpdate(factors, true);
-  if (debug_)
+  if (debug())
     SYLAR_LOG_DEBUG(g_logger_sys)
         << "process " << factors.size() << " loopclosures";
 }

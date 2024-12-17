@@ -1,4 +1,3 @@
-# Add source code for kimera_rpgo
 target_sources(pcm_solver
 	PRIVATE
 	"${CMAKE_CURRENT_LIST_DIR}/GeometryUtils.h"

@@ -24,12 +24,12 @@ class FactorGraph : public std::vector<LoopEdge> {
   void add(const LoopEdge &factor) { push_back(factor); }
 };
 using LoopframeKey = uint64_t;
-inline int_t GetKeyClientID(const LoopframeKey& key) {
+inline int_t GetKeyClientID(const LoopframeKey &key) {
   int_t client_id = static_cast<uint32_t>(key >> 32);
   SYLAR_ASSERT(client_id != 0);
   return client_id;
 }
-inline int_t GetKeyLoopframeID(const LoopframeKey& key) {
+inline int_t GetKeyLoopframeID(const LoopframeKey &key) {
   int_t loopframe_id = static_cast<uint32_t>(key & 0xFFFFFFFF);
   return loopframe_id;
 }
@@ -71,7 +71,11 @@ class Sim3LoopframeValue : public std::unordered_map<LoopframeKey, VecSim3> {
       insert({key, sim3_wc});
     }
     fix_key_ = values.getFixKey();
-    SYLAR_LOG_DEBUG(SYLAR_LOG_ROOT()) << "set fix key is : " << fix_key_;
+    if (debug())
+      SYLAR_LOG_DEBUG(SYLAR_LOG_ROOT())
+          << "set fix key is : " << fix_key_
+          << "[client:" << GetKeyClientID(fix_key_)
+          << ",id:" << GetKeyLoopframeID(fix_key_) << "]";
   }
   LoopframeKey getFixKey() { return fix_key_; }
 

@@ -144,7 +144,7 @@ void Pcm::mergeCheckAndPreform(
       output_nfg.erase(it_output_nfg);
       nfg_odom_.erase(it_nfg_odom_);
       map_clients_.erase(it_map_clients_);
-      if (debug_) {
+      if (debug()) {
         std::stringstream ss;
         for (int i = 0; i < map_clients_.size(); i++) {
           ss << " map:" << i << "[ ";
@@ -227,7 +227,7 @@ bool Pcm::removeOutliers(const FactorGraph &new_factors,
     *output_values = multirobotValueInitialization(*output_values);
   }
   buildGraphToOptimize(*output_nfg);
-  if (debug_ && do_optimize)
+  if (debug() && do_optimize)
     SYLAR_LOG_INFO(g_logger)
         << " milliseconds. Detected " << total_lc_
         << " total loop closures with " << total_good_lc_ << " inliers.";
@@ -318,13 +318,13 @@ std::vector<LoopframeValue> Pcm::multirobotValueInitialization(
         const int_t &ri = client_i;
         ObservationId obs_id(r_base, ri);
 
-        FactorGraph lc_factors = loop_closures_.at(obs_id).consistent_factors;
         // 只有和 base robot 有联系且没有调整位姿的才可以调整位姿
         // ??? 是否可以拓展成和所有base 的平均 trans 呢？
-        if (lc_factors.size() == 0 ||
+        if (loop_closures_.find(obs_id) == loop_closures_.end() ||
             record_robot.find(client_i) != record_robot.end()) {
           continue;
         }
+        FactorGraph lc_factors = loop_closures_.at(obs_id).consistent_factors;
         record_robot.insert(client_i);
         TransMatrixVector T_wb_wi_measured;
         for (auto &factor : lc_factors) {
@@ -633,9 +633,10 @@ void Pcm::updateOdom(int map_id, const LoopEdge &factor,
     auto initial_pose = prev->m_twc;
     odom_trajectories_[client][prev_key] = initial_pose;
     robot_order_.push_back(client);
-    SYLAR_LOG_DEBUG(g_logger)
-        << "Create new robot trajectories [client:" << GetKeyClientID(prev_key)
-        << ",id:" << GetKeyLoopframeID(prev_key) << "]";
+    if (debug())
+      SYLAR_LOG_DEBUG(g_logger) << "Create new robot trajectories [client:"
+                                << GetKeyClientID(prev_key)
+                                << ",id:" << GetKeyLoopframeID(prev_key) << "]";
   }
   TransMatrixType prev_pose;
   if (odom_trajectories_[client].exist(prev_key)) {
