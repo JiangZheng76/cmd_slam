@@ -159,15 +159,15 @@ void Mapmanager::checkOptimizeAndViewUpdate() {
   std::vector<LoopframePtr> update_lfs;
   if (solver_->checkIsOptimized(full_values)) {
     update_lfs.reserve(full_values.front().size() * 10);
-    for (auto &values : full_values)
-      for (auto &[key, pose] : values) {
+    for (const auto &values : full_values) {
+      for (const auto &[key, pose] : values) {
         auto client = GetKeyClientID(key);
         auto id = GetKeyLoopframeID(key);
-        if(fmgrs_.find(client) == fmgrs_.end()){
+        if (fmgrs_.find(client) == fmgrs_.end()) {
           std::vector<int> clients;
           std::stringstream ss;
-          ss << "client:" <<client << " | fmgrs client:[ ";
-          for(auto& fmgr : fmgrs_){
+          ss << "client:" << client << " | fmgrs client:[ ";
+          for (auto &fmgr : fmgrs_) {
             ss << fmgr.first << " ";
           }
           ss << "]";
@@ -177,6 +177,10 @@ void Mapmanager::checkOptimizeAndViewUpdate() {
         auto lf = fmgrs_[client]->getLoopframeByKFId(id);
         update_lfs.push_back(lf);
       }
+    }
+    if (debug_)
+      SYLAR_LOG_DEBUG(g_logger_sys)
+          << "update Loopframe viewer size:" << update_lfs.size();
     viewer_->showLoopframes(update_lfs);
   }
   return;
@@ -215,16 +219,17 @@ void Mapmanager::processLoopClosures() {
     m_lc_buf.pop_front();
   }
   solver_->insertLoopEdgeAndUpdate(factors, true);
-  SYLAR_LOG_DEBUG(g_logger_sys)
-      << "process " << factors.size() << " loopclosures";
+  if (debug_)
+    SYLAR_LOG_DEBUG(g_logger_sys)
+        << "process " << factors.size() << " loopclosures";
 }
 void Mapmanager::createConstrant(LoopframePtr from, LoopframePtr to,
                                  TransMatrixType t_tf, precision_t icp_score,
                                  precision_t sc_score) {
-  LoopEdgePtr le(
-      new LoopEdge(from, to, t_tf, icp_score, sc_score, EdgeType::LOOPCLOSURE));
+  LoopEdgePtr factor = std::make_shared<LoopEdge>(
+      from, to, t_tf, icp_score, sc_score, EdgeType::LOOPCLOSURE);
   std::unique_lock<std::mutex> lk(m_mtx_lc_buf);
-  m_lc_buf.push_back(le);
+  m_lc_buf.push_back(factor);
 }
 
 }  // namespace cmd

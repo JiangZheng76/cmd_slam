@@ -43,7 +43,6 @@ include_directories(
     ${EIGEN3_INCLUDE_DIRS}
     ${GTSAM_INCLUDE_DIR}
     ${PROJECT_SOURCE_DIR}/src
-    ${PROJECT_SOURCE_DIR}/thrid-party/Kimera-RPGO/include
     ${cmd_comm_INCLUDE_DIRS} # 只使用 cmd_comm, sylar 已经包含在了 cmd_comm 中
 )
 set(LIBS

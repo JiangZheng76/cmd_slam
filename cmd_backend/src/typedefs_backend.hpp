@@ -41,6 +41,10 @@
 #define SCALE_ERROR_SCALE 0.1
 
 namespace cmd {
+    bool debug_ = true;
+}
+
+namespace cmd {
 
 class ScanContext;
 using ScanContextPtr = std::shared_ptr<ScanContext>;

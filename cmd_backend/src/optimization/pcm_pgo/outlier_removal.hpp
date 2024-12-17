@@ -58,7 +58,7 @@ class OutlierRemoval {
                                             FactorGraph *updated_factors) {}
 
  protected:
-  bool debug_ = true;
+  // bool debug_ = true;
   bool log_output_ = false;
   std::string log_folder_;
 };

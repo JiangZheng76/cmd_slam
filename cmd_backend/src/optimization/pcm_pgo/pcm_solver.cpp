@@ -72,8 +72,6 @@ void PcmSolver::update(FactorGraph &factors, LoopframeValue &values,
   if (do_optimize && optimize_graph) {
     SYLAR_LOG_INFO(g_logger_sys) << "--> RPGO START ";
     optimize(need_optimize_idx);
-    // 更新 view
-
     SYLAR_LOG_INFO(g_logger_sys) << "<-- RPGO END ";
   }
 }
@@ -195,7 +193,7 @@ void PcmSolver::optimize(std::vector<bool> &need_optimize_idx) {
     // 迭代求解
     ceres::Solver::Options solver_options;
     solver_options.max_num_iterations = OPT_ITER;
-    solver_options.minimizer_progress_to_stdout = true;  // 是否输出迭代信息
+    solver_options.minimizer_progress_to_stdout = false;  // 是否输出迭代信息
     solver_options.function_tolerance = 1e-16;            // 收敛的阈值
     solver_options.linear_solver_type = ceres::SPARSE_SCHUR;
 
@@ -229,7 +227,7 @@ void PcmSolver::Run() {
       RWMutexType::WriteLock lk(mutex_);
       les.reserve(factors_buf_.size());
       while (!factors_buf_.empty()) {
-        auto &le = factors_buf_.front();
+        auto le = factors_buf_.front();
         factors_buf_.pop();
         les.push_back(le);
       }

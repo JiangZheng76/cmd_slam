@@ -144,18 +144,6 @@ void Pcm::mergeCheckAndPreform(
       output_nfg.erase(it_output_nfg);
       nfg_odom_.erase(it_nfg_odom_);
       map_clients_.erase(it_map_clients_);
-      // int new_len = map_clients_.size() - 1;
-      // int old_len = map_clients_.size();
-      // for (int i = map_b + 1, j = map_b; i < old_len; i++, j++) {
-      //   output_values[j] = std::move(output_values[i]);
-      //   output_nfg[j] = std::move(output_nfg[i]);
-      //   nfg_odom_[j] = std::move(nfg_odom_[i]);
-      //   map_clients_[j] = std::move(map_clients_[i]);
-      // }
-      // output_values.resize(new_len);
-      // output_nfg.resize(new_len);
-      // nfg_odom_.resize(new_len);
-      // map_clients_.resize(new_len);
       if (debug_) {
         std::stringstream ss;
         for (int i = 0; i < map_clients_.size(); i++) {

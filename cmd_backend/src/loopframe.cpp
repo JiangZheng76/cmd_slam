@@ -116,9 +116,9 @@ bool Loopframe::addReference(LoopframePtr ref, const TransMatrixType &t_tf,
       return true;
     }
   }
-  LoopEdgePtr le(new LoopEdge(ref, shared_from_this(), t_tf, icp_score,
-                              sc_score, EdgeType::ODOMETRY));
-  m_edges.push_back(le);
+  LoopEdgePtr factor = std::make_shared<LoopEdge>(
+      ref, shared_from_this(), t_tf, icp_score, sc_score, EdgeType::ODOMETRY);
+  m_edges.push_back(factor);
   return true;
 }
 void Loopframe::updateFromCeres() {
