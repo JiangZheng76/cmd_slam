@@ -3,6 +3,7 @@ project(cmd_frontend)
 
 set(CMAKE_BUILD_TYPE debug)
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON) 
 # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -00 -g")
 set( CMAKE_CXX_FLAGS "-std=c++14 -O3" )
 find_package(catkin_simple REQUIRED)

@@ -1,9 +1,8 @@
 #pragma once
-
 #include "cmd_comm.hpp"
 #include "optimization/pcm_pgo/pcm_solver.hpp"
 #include "typedefs_backend.hpp"
-
+#include "loopframe.hpp"
 namespace cmd {
 enum OptimizationMode { CERES_SIM3 = 0, PCM_OUTLIER = 1 };
 class Framemanager {

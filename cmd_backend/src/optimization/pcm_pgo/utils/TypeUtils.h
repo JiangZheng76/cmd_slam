@@ -44,7 +44,7 @@ class LoopframeValue
       insert(v);
     }
   }
-  bool exist(LoopframeKey key) { return find(key) == end(); }
+  bool exist(LoopframeKey key) { return find(key) != end(); }
   /// 获取某一帧的信息
   bool get(LoopframeKey key, TransMatrixType &trans) {
     if (exist(key)) {
@@ -70,6 +70,7 @@ class Sim3LoopframeValue : public std::unordered_map<LoopframeKey, VecSim3> {
       insert({key, sim3_wc});
     }
     fix_key_ = values.getFixKey();
+    SYLAR_LOG_DEBUG(SYLAR_LOG_ROOT()) << "set fix key is : " << fix_key_;
   }
   LoopframeKey getFixKey() { return fix_key_; }
 

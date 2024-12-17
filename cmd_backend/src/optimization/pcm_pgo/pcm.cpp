@@ -1,6 +1,6 @@
 #include "optimization/pcm_pgo/pcm.hpp"
-
-#include <gtsam/geometry/Pose2.h>
+#define SLOW_BUT_CORRECT_BETWEENFACTOR
+#include <ceres/ceres.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/NoiseModel.h>
@@ -10,9 +10,11 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 
+#include "config.hpp"
 #include "loopframe.hpp"
 #include "optimization/pcm_pgo/utils/GeometryUtils.h"
 #include "optimization/pcm_pgo/utils/GraphUtils.h"
+// #include "optimization/pose_average.hpp"
 
 namespace cmd {
 static mysylar::Logger::ptr g_logger = SYLAR_LOG_NAME("CMD_BACKEND");
@@ -27,6 +29,10 @@ Pcm::Pcm(PcmParams params, MultiRobotAlignMethod align_method,
       odom_check_(true),
       loop_consistency_check_(true) {}
 int findAndInsertClient(std::vector<ClientSet> &map_client, int_t client) {
+  if (client == 0 || client == 32) {
+    SYLAR_LOG_ERROR(g_logger) << "invaild client num.";
+    SYLAR_ASSERT(false);
+  }
   int len = map_client.size();
   for (int i = 0; i < len; i++) {
     auto &client_set = map_client[i];
@@ -122,18 +128,48 @@ void Pcm::mergeCheckAndPreform(
       }
 
       // 删除掉 b
-      int new_len = map_clients_.size() - 1;
-      int old_len = map_clients_.size();
-      for (int i = map_b + 1, j = map_b; i < old_len; i++, j++) {
-        output_values[j] = std::move(output_values[i]);
-        output_nfg[j] = std::move(output_nfg[i]);
-        nfg_odom_[j] = std::move(nfg_odom_[i]);
-        map_clients_[j] = std::move(map_clients_[i]);
+      auto it_output_values = output_values.begin();
+      auto it_output_nfg = output_nfg.begin();
+      auto it_nfg_odom_ = nfg_odom_.begin();
+      auto it_map_clients_ = map_clients_.begin();
+      int i = 0;
+      while (i < map_b) {
+        it_output_values++;
+        it_output_nfg++;
+        it_nfg_odom_++;
+        it_map_clients_++;
+        i++;
       }
-      output_values.resize(new_len);
-      output_nfg.resize(new_len);
-      nfg_odom_.resize(new_len);
-      map_clients_.resize(new_len);
+      output_values.erase(it_output_values);
+      output_nfg.erase(it_output_nfg);
+      nfg_odom_.erase(it_nfg_odom_);
+      map_clients_.erase(it_map_clients_);
+      // int new_len = map_clients_.size() - 1;
+      // int old_len = map_clients_.size();
+      // for (int i = map_b + 1, j = map_b; i < old_len; i++, j++) {
+      //   output_values[j] = std::move(output_values[i]);
+      //   output_nfg[j] = std::move(output_nfg[i]);
+      //   nfg_odom_[j] = std::move(nfg_odom_[i]);
+      //   map_clients_[j] = std::move(map_clients_[i]);
+      // }
+      // output_values.resize(new_len);
+      // output_nfg.resize(new_len);
+      // nfg_odom_.resize(new_len);
+      // map_clients_.resize(new_len);
+      if (debug_) {
+        std::stringstream ss;
+        for (int i = 0; i < map_clients_.size(); i++) {
+          ss << " map:" << i << "[ ";
+          for (auto &client : map_clients_[i]) {
+            ss << client << " ";
+          }
+          ss << "]";
+        }
+        SYLAR_LOG_DEBUG(g_logger)
+            << "merge preform: map[" << map_a << "<-" << map_b << "]"
+            << "after merge size is " << output_values.size() << ","
+            << "map_client info => " << ss.str();
+      }
     }
   }
 }
@@ -198,12 +234,11 @@ bool Pcm::removeOutliers(const FactorGraph &new_factors,
                            *need_optimized_map);  // 提取需要优化的 mapid
     do_optimize = true;
   }
-  if (multirobot_align_method_ != MultiRobotAlignMethod::NONE &&
-      robot_order_.size() > 1) {
+  if (robot_order_.size() > 1) {
     // 给新合并的 robot 位姿进行初始化处理
     *output_values = multirobotValueInitialization(*output_values);
   }
-  // *output_nfg = buildGraphToOptimize(); // 没有禁用某些机器人
+  buildGraphToOptimize(*output_nfg);
   if (debug_ && do_optimize)
     SYLAR_LOG_INFO(g_logger)
         << " milliseconds. Detected " << total_lc_
@@ -228,23 +263,23 @@ void Pcm::extractNeedOptimizeMap(
   }
 }
 
-FactorGraph Pcm::buildGraphToOptimize() {
-  FactorGraph output_nfg;
-  // output_nfg.add(nfg_odom_);
-  // std::unordered_map<ObservationId, Measurements>::iterator it =
-  //     loop_closures_.begin();
-  // while (it != loop_closures_.end())
-  // {
-  //     if (std::find(ignored_prefixes_.begin(),
-  //                   ignored_prefixes_.end(),
-  //                   it->first.client_a) == ignored_prefixes_.end() &&
-  //         std::find(ignored_prefixes_.begin(),
-  //                   ignored_prefixes_.end(),
-  //                   it->first.client_b) == ignored_prefixes_.end())
-  //         output_nfg.add(it->second.consistent_factors);
-  //     it++;
-  // }
-  return output_nfg;
+void Pcm::buildGraphToOptimize(std::vector<FactorGraph> &output_nfg) {
+  int robot_num = nfg_odom_.size();
+  output_nfg.resize(robot_num);
+  for (int i = 0; i < robot_num; i++) {
+    output_nfg[i] = nfg_odom_[i];
+  }
+  std::unordered_map<ObservationId, Measurements>::iterator it =
+      loop_closures_.begin();
+  while (it != loop_closures_.end()) {
+    auto client_a = (*it).first.client_a;
+    auto client_b = (*it).first.client_b;
+    auto map_a = findAndInsertClient(map_clients_, client_a);
+    auto map_b = findAndInsertClient(map_clients_, client_b);
+    SYLAR_ASSERT2(map_a == map_b, "两个 robot 不在同一个 map 中，不合法!");
+    output_nfg[map_a].add(it->second.consistent_factors);
+    it++;
+  }
 }
 LoopframeValue Pcm::getRobotOdomValues(const int_t &client_id,
                                        const TransMatrixType &T_wb_wc) {
@@ -287,22 +322,22 @@ std::vector<LoopframeValue> Pcm::multirobotValueInitialization(
       }
       for (auto i_robot_it = clients.begin(); i_robot_it != clients.end();
            i_robot_it++) {
-        auto i = *i_robot_it;
-        if (base_robot == i) {
+        auto client_i = *i_robot_it;
+        if (base_robot == client_i) {
           continue;
         }
-        const int_t &r_base = robot_order_[base_robot];
-        const int_t &ri = robot_order_[i];
+        const int_t &r_base = base_robot;
+        const int_t &ri = client_i;
         ObservationId obs_id(r_base, ri);
 
         FactorGraph lc_factors = loop_closures_.at(obs_id).consistent_factors;
         // 只有和 base robot 有联系且没有调整位姿的才可以调整位姿
         // ??? 是否可以拓展成和所有base 的平均 trans 呢？
         if (lc_factors.size() == 0 ||
-            record_robot.find(i) != record_robot.end()) {
+            record_robot.find(client_i) != record_robot.end()) {
           continue;
         }
-        record_robot.insert(i);
+        record_robot.insert(client_i);
         TransMatrixVector T_wb_wi_measured;
         for (auto &factor : lc_factors) {
           auto from = factor.m_from_lf;
@@ -325,12 +360,12 @@ std::vector<LoopframeValue> Pcm::multirobotValueInitialization(
           T_wb_wi_measured.push_back(T_wb_wi);
         }
         TransMatrixType T_wb_wi_avg = gncRobustPoseAveraging(T_wb_wi_measured);
-        initialized_values.add(
-            getRobotOdomValues(robot_order_[i], T_wb_wi_avg));
+        initialized_values.add(getRobotOdomValues(client_i, T_wb_wi_avg));
       }
     }
     // 初始化 fix_key
     auto fix_key = GetKey(*(clients.begin()), 0);
+    SYLAR_ASSERT(GetKeyClientID(fix_key) != 0);
     initialized_values.setFixKey(fix_key);
     result.push_back(std::move(initialized_values));
   }
@@ -600,7 +635,7 @@ void Pcm::updateOdom(int map_id, const LoopEdge &factor,
   LoopframeKey prev_key =
       GetKey(factor.m_from_lf->m_client_id, factor.m_from_lf->m_lf_id);
   LoopframeKey cur_key =
-      GetKey(factor.m_to_lf->m_client_id, factor.m_from_lf->m_lf_id);
+      GetKey(factor.m_to_lf->m_client_id, factor.m_to_lf->m_lf_id);
 
   LoopframePtr prev = factor.m_from_lf;
   LoopframePtr cur = factor.m_to_lf;
@@ -610,11 +645,19 @@ void Pcm::updateOdom(int map_id, const LoopEdge &factor,
     auto initial_pose = prev->m_twc;
     odom_trajectories_[client][prev_key] = initial_pose;
     robot_order_.push_back(client);
+    SYLAR_LOG_DEBUG(g_logger)
+        << "Create new robot trajectories [client:" << GetKeyClientID(prev_key)
+        << ",id:" << GetKeyLoopframeID(prev_key) << "]";
   }
   TransMatrixType prev_pose;
   if (odom_trajectories_[client].exist(prev_key)) {
     prev_pose = odom_trajectories_[client][prev_key];  // twc
   } else {
+    SYLAR_LOG_ERROR(g_logger) << "Attempted to add odom to non-existing key. "
+                              << "prev:[client:" << GetKeyClientID(prev_key)
+                              << ",id : " << GetKeyLoopframeID(prev_key) << "]"
+                              << "cur:[client:" << GetKeyClientID(cur_key)
+                              << ",id : " << GetKeyLoopframeID(cur_key) << "]";
     SYLAR_ASSERT2(false, "Attempted to add odom to non-existing key. ");
   }
   odom_trajectories_[client][cur_key] =

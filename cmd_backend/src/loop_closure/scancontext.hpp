@@ -1,6 +1,7 @@
 #pragma once
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
+#include <cereal/cereal.hpp>
 #include <flann/flann.hpp>
 #include <iostream>
 #include <memory>

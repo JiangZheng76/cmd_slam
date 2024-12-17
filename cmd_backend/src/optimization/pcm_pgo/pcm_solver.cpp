@@ -2,7 +2,6 @@
 
 #include "ceres/ceres.h"
 #include "loopframe.hpp"
-#include "map.hpp"
 #include "optimization/cmd_sim3.hpp"
 
 namespace cmd {
@@ -158,6 +157,9 @@ void PcmSolver::optimize(std::vector<bool> &need_optimize_idx) {
     ceres::LocalParameterization *local_pose_param = new Sim3Parameterization();
 
     auto fix_key = full_value.getFixKey();
+    if(full_value.find(fix_key) == full_value.end()){
+      SYLAR_ASSERT(false);
+    }
     auto fix_pose = full_value[fix_key];
 
     // 添加所有的顶点
@@ -193,7 +195,7 @@ void PcmSolver::optimize(std::vector<bool> &need_optimize_idx) {
     // 迭代求解
     ceres::Solver::Options solver_options;
     solver_options.max_num_iterations = OPT_ITER;
-    solver_options.minimizer_progress_to_stdout = false;  // 是否输出迭代信息
+    solver_options.minimizer_progress_to_stdout = true;  // 是否输出迭代信息
     solver_options.function_tolerance = 1e-16;            // 收敛的阈值
     solver_options.linear_solver_type = ceres::SPARSE_SCHUR;
 
@@ -205,6 +207,7 @@ void PcmSolver::optimize(std::vector<bool> &need_optimize_idx) {
     // 更新数据
     updateDataAfterOptimize(need_optimize_idx, full_values);
     is_optimized_ = true;
+    SYLAR_LOG_INFO(g_logger_sys) << "Finish Optimize.";
   }
 }
 /// @brief 检查是否启动优化
@@ -217,6 +220,7 @@ bool PcmSolver::checkNeedOptimize() {
 }
 /// @brief 优化线程
 void PcmSolver::Run() {
+  SYLAR_LOG_INFO(g_logger_sys) << "--> PcmSolver START";
   while (solver_running_) {
     FactorGraph new_factors;
     LoopframeValue new_vals;  // [key,ref_pose]
@@ -230,11 +234,18 @@ void PcmSolver::Run() {
         les.push_back(le);
       }
     }
-    convertFactorAndValue(les, new_factors, new_vals);
-    update(new_factors, new_vals);
+    if (les.size() != 0) {
+      convertFactorAndValue(les, new_factors, new_vals);
+      if (new_factors.size() >= 1 &&
+          new_factors[0].m_type == EdgeType::LOOPCLOSURE) {
+        SYLAR_LOG_DEBUG(g_logger_sys)
+            << "PcmSolver process " << new_factors.size() << " factors.";
+      }
+      update(new_factors, new_vals);
+    }
     usleep(500);
   }
-  SYLAR_LOG_INFO(g_logger_sys) << "pcm solver optimize thread is end.";
+  SYLAR_LOG_INFO(g_logger_sys) << "<-- pcm solver optimize thread is end.";
 }
 void PcmSolver::Stop() { solver_running_ = false; }
 }  // namespace cmd

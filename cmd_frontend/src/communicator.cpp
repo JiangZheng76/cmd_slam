@@ -88,7 +88,7 @@ void FrontEndComm::processSendMsgLoopframe() {
 /// @param msg
 void FrontEndComm::publishMsg(MsgLoopframePtr msg) {
   static int s_id = 0;
-  msg->m_lf_id = ++s_id;
+  msg->m_lf_id = s_id++;
   if (m_process_lfs.size() != 0) {
     // SYLAR_ASSERT(m_process_lfs.size() <= m_ref_num);
     int num = 0;

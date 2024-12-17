@@ -25,7 +25,7 @@ set(INCLUDE_DIRS
 IF(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE RelWithDebInfo)
 ENDIF()
-set(EIGEN3_INCLUDE_DIRS /home/sysu/eigen-3.4)
+set(EIGEN3_INCLUDE_DIRS /home/sysu/eigen-3.4.0)
 # find_package(Eigen3 REQUIRED)
 find_package(Sophus REQUIRED)
 find_package(fmt REQUIRED)

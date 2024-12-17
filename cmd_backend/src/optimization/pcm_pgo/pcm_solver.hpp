@@ -2,7 +2,6 @@
 
 #include <sophus/sim3.hpp>
 
-#include "loopframe.hpp"
 #include "optimization/pcm_pgo/pcm.hpp"
 #include "optimization/pcm_pgo/solver_params.hpp"
 #include "optimization/pcm_pgo/utils/TypeUtils.h"

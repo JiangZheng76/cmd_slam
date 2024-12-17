@@ -8,7 +8,7 @@ namespace cmd {
 class Pcm : public OutlierRemoval {
  public:
   Pcm(PcmParams params,
-      MultiRobotAlignMethod align_method = MultiRobotAlignMethod::NONE,
+      MultiRobotAlignMethod align_method = MultiRobotAlignMethod::GNC,
       double align_gnc_probability = 0.99);
   virtual size_t getNumLC() override { return total_lc_; }
   virtual size_t getNumLCInliers() override { return total_good_lc_; }
@@ -44,7 +44,7 @@ class Pcm : public OutlierRemoval {
 
   void findInliers();
 
-  FactorGraph buildGraphToOptimize();
+  void buildGraphToOptimize(std::vector<FactorGraph> &output_nfg);
 
   std::vector<LoopframeValue> multirobotValueInitialization(
       std::vector<LoopframeValue> &input_value);
@@ -52,6 +52,10 @@ class Pcm : public OutlierRemoval {
   LoopframeValue getRobotOdomValues(
       const int_t &client_id,
       const TransMatrixType &T_wb_wc = TransMatrixType());
+
+  TransMatrixType CeresRobustPoseAveraging(
+      const TransMatrixVector &input_poses, const double &rot_sigma,
+      const double &trans_sigma);
 
   TransMatrixType gncRobustPoseAveraging(const TransMatrixVector &input_poses,
                                          const double &rot_sigma = 0.1,

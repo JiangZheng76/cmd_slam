@@ -9,15 +9,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -march=native")
 set(CMAKE_CXX_STANDARD 17)
-# add_compile_options(
-#     -pthread -pipe -Wall -Wextra -pedantic 
-#     -Wno-unused-parameter -Wno-unused-function -Wno-vla
-#     -march=native
-# )
-IF(NOT CMAKE_BUILD_TYPE)
-#   set(CMAKE_BUILD_TYPE RelWithDebInfo)
-  set(CMAKE_BUILD_TYPE Debug)
-ENDIF()
 
 find_package(catkin_simple REQUIRED)
 catkin_simple(ALL_DEPS_REQUIRED)
@@ -36,12 +27,12 @@ find_package(Ceres REQUIRED)
 find_package(PCL 1.13 REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(Pangolin REQUIRED)
-# find_package(GTSAM REQUIRED)
+find_package(GTest REQUIRED)
+set(GTSAM_INCLUDE_DIR /home/sysu/gtsam)
+set(GTSAM_LIB /home/sysu/gtsam/build/gtsam/libgtsam.so.4.3a0)
 # find_package(Eigen3 REQUIRED)
 
-
 set(EIGEN3_INCLUDE_DIRS /home/sysu/eigen-3.4.0)
-message(${EIGEN3_INCLUDE_DIRS})
 
 set(PCM_INCLUDE_DIRS ${PCM_PATH}/include())
 add_subdirectory(${CMAKE_SOURCE_DIR}/src/optimization/pcm_pgo)
@@ -59,7 +50,6 @@ set(LIBS
     fmt
     pthread
     rpgo_max_clique
-    ${GTSAM_LIB}
     yaml-cpp
     pcm_solver
     ${PCM_LIBRARY}
@@ -67,6 +57,7 @@ set(LIBS
     ${CERES_LIBRARIES}
     ${catkin_LIBRARIES} # mysyalr 的库在 cmd_comm 中已经定义了路径了
     ${Pangolin_LIBRARIES}
+    ${GTSAM_LIB}
 )
 
 set(BACKEND_SOURCE_FILES
@@ -87,8 +78,8 @@ set(BACKEND_SOURCE_FILES
     src/visualization/loopframe_display.cpp
 )
 
-cs_add_library(cmd_backend ${BACKEND_SOURCE_FILES})
-target_link_libraries(cmd_backend ${LIBS} )
+# cs_add_library(cmd_backend ${BACKEND_SOURCE_FILES})
+# target_link_libraries(cmd_backend ${LIBS} )
 
-cs_add_executable(cmd_backend_node cmd_sys/cmd_backend_node.cpp)
-target_link_libraries(cmd_backend_node cmd_backend ${LIBS})
+cs_add_executable(cmd_backend_node cmd_sys/cmd_backend_node.cpp ${BACKEND_SOURCE_FILES})
+target_link_libraries(cmd_backend_node ${LIBS})

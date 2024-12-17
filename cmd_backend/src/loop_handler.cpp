@@ -113,17 +113,17 @@ void LoopHandler::Run() {
         if (!icp_succ) {
           SYLAR_LOG_DEBUG(g_logger_sys)
               << "[agent id:" << query_frame->m_client_id
-              << ",iid:" << query_frame->m_incoming_id << "]-"
+              << ",id:" << query_frame->m_lf_id << "]-"
               << "[agent id:" << matched_frame->m_client_id
-              << ",iid:" << matched_frame->m_incoming_id << "] " << icp_error
+              << ",id:" << matched_frame->m_lf_id << "] " << icp_error
               << " No";
           continue;
         } else {
           SYLAR_LOG_DEBUG(g_logger_sys)
               << "[agent id:" << query_frame->m_client_id
-              << ",iid:" << query_frame->m_incoming_id << "]-"
+              << ",id:" << query_frame->m_lf_id << "]-"
               << "[agent id:" << matched_frame->m_client_id
-              << ",iid:" << matched_frame->m_incoming_id << "] " << icp_error
+              << ",id:" << matched_frame->m_lf_id << "] " << icp_error
               << " \033[1;32m Yes \033[0m";
         }
         // 自动合并 mapmanager 执行优化和合并

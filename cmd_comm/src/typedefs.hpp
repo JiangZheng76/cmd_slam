@@ -7,7 +7,6 @@
 #include <Eigen/StdVector>
 #include <list>
 #include <memory>
-#include <sstream>
 #include <vector>
 
 // thrid-party

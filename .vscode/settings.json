@@ -90,7 +90,7 @@
         "hash_map": "cpp",
         "hash_set": "cpp"
     },
-    "cmake.sourceDirectory": "/home/sysu/cmd_ws/src/cmd-slam/cmd_backend/thrid-party/mysylar/thrid-party/yaml-cpp/test/gtest-1.11.0/googletest",
+    "cmake.sourceDirectory": "/home/sysu/cmd_ws/src/cmd-slam/cmd_backend",
     "ros.distro": "noetic",
     "python.autoComplete.extraPaths": [
         "/opt/ros/noetic/lib/python3/dist-packages"
@@ -99,17 +99,8 @@
         "/opt/ros/noetic/lib/python3/dist-packages"
     ],
     "clangd.arguments": [
-        "--compile-commands-dir=${workspaceFolder}/build",
-        "--background-index",
-        "--clang-tidy",
-        "--log=verbose",
-        "--pretty",
-        "--function-arg-placeholders=true",
-        "--header-insertion-decorators",
-        "--header-insertion=never",
-        "--inlay-hints",
-        "-j=12"
-],
-"C_Cpp.intelliSenseEngineFallback": "disabled"
-
+        "--compile-commands-dir=${workspaceFolder}/../../build/cmd_backend/",
+        "--compile-commands-dir=${workspaceFolder}/cmd_comm/thrid-party/",
+        "--compile-commands-dir=${workspaceFolder}/../../build/cmd_comm/"
+    ]
 }

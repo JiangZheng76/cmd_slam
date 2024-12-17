@@ -1,0 +1,60 @@
+# 使用官方Ubuntu基础镜像
+FROM ros:melodic
+# 设置工作目录
+WORKDIR /root
+
+RUN apt-get update && apt-get install -y git \
+    libfmt-dev \
+    python3-pip \
+    sudo \
+    vim \
+    python3-wstool \
+    inetutils-ping \
+    xarclock \
+    build-essential \
+    cmake \
+    make \
+    ca-certificates \
+    openssh-server \
+    gdb \
+    libsuitesparse-dev \
+    libyaml-cpp-dev \
+    libvtk7-dev \
+    libglew-dev \
+    libgflags-dev \
+    wget \
+    libboost-all-dev \
+    libflann-dev
+    
+RUN pip3 install -U catkin-tools
+# ---------------------------------------------------------------------------------------------------------
+# 补充设置
+# ---------------------------------------------------------------------------------------------------------
+# 开启 ssh 
+RUN mkdir /var/run/sshd
+
+# 设置root用户的密码（出于示例目的，实际使用时请确保使用更安全的方式）
+RUN echo 'root:root' | chpasswd
+
+# SSH登录时不进行严格的密钥检查
+RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+RUN sed -i 's/#StrictModes yes/StrictModes no/' /etc/ssh/sshd_config
+
+# 暴露SSH端口
+EXPOSE 22
+
+# ---------------------------------------------------------------------------------------------------------
+# 启动运行
+# ---------------------------------------------------------------------------------------------------------
+# 清理缓存
+RUN rm -rf /var/lib/apt/lists/*
+
+
+# ---------------------------------------------------------------------------------------------------------
+# 拷贝的文件
+# ---------------------------------------------------------------------------------------------------------
+COPY src /root/cmd_ws/src
+RUN bash /root/cmd_ws/src/cmd-slam/install.bash
+
+# 启动SSH服务 启动默认挂后台
+CMD ["/usr/sbin/sshd", "-D"] 

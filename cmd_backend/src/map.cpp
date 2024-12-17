@@ -163,6 +163,17 @@ void Mapmanager::checkOptimizeAndViewUpdate() {
       for (auto &[key, pose] : values) {
         auto client = GetKeyClientID(key);
         auto id = GetKeyLoopframeID(key);
+        if(fmgrs_.find(client) == fmgrs_.end()){
+          std::vector<int> clients;
+          std::stringstream ss;
+          ss << "client:" <<client << " | fmgrs client:[ ";
+          for(auto& fmgr : fmgrs_){
+            ss << fmgr.first << " ";
+          }
+          ss << "]";
+          SYLAR_LOG_DEBUG(g_logger_sys) << ss.str();
+          SYLAR_ASSERT(false);
+        }
         auto lf = fmgrs_[client]->getLoopframeByKFId(id);
         update_lfs.push_back(lf);
       }
@@ -198,12 +209,14 @@ bool Mapmanager::checkLoopclosureBuf() { return !m_lc_buf.empty(); }
 void Mapmanager::processLoopClosures() {
   LoopEdgeVector factors;
   std::unique_lock<std::mutex> lk(m_mtx_lc_buf);
-  while (m_lc_buf.empty()) {
+  while (checkLoopclosureBuf()) {
     auto factor = m_lc_buf.front();
     factors.push_back(factor);
     m_lc_buf.pop_front();
   }
   solver_->insertLoopEdgeAndUpdate(factors, true);
+  SYLAR_LOG_DEBUG(g_logger_sys)
+      << "process " << factors.size() << " loopclosures";
 }
 void Mapmanager::createConstrant(LoopframePtr from, LoopframePtr to,
                                  TransMatrixType t_tf, precision_t icp_score,

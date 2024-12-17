@@ -4,6 +4,8 @@
 #include <Eigen/Core>
 #include <flann/flann.hpp>
 #include <sophus/sim3.hpp>
+#include <memory>
+#include <queue>
 
 #include "cmd_comm.hpp"
 #include "utils.hpp"
@@ -124,9 +126,6 @@ using IDPose3Vector =
     std::vector<std::pair<int, Eigen::Vector3d>,
                 Eigen::aligned_allocator<std::pair<int, Eigen::Vector3d>>>;
 
-// using DataBundleList = std::list<DataBundlePtr>;
-// using MsgLoopframeList = std::list<MsgLoopframePtr>;
-// using MessageContainerList = std::list<MessageContainerPtr>;
 using LoopframeList = std::list<LoopframePtr>;
 using LoopEdgeList = std::list<LoopEdgePtr>;
 
