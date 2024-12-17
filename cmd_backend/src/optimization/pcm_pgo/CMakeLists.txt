@@ -5,7 +5,7 @@ set(PCM_INCLUDE_FILE
 )
 message(${PCM_INCLUDE_FILE})
 set(GTSAM_INCLUDE_DIR /home/sysu/gtsam)
-set(GTSAM_LIB /home/sysu/gtsam/build/gtsam/libgtsam.so.4.3a0)
+set(GTSAM_LIB /home/sysu/gtsam/build/gtsam/libgtsam.so)
 message(${GTSAM_INCLUDE_DIR})
 
 include_directories(
@@ -22,10 +22,10 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/max_clique_finder)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/utils)
 
 set(PCM_LIBS
-    ${GTSAM_LIB}
     rpgo_max_clique
     fmt
+    ${GTSAM_LIB}
 )
 
 target_include_directories(pcm_solver PUBLIC ${PROJECT_SOURCE_DIR}/include)
-target_link_libraries(pcm_solver PRIVATE ${PCM_LIBS})
+target_link_libraries(pcm_solver PUBLIC ${PCM_LIBS})

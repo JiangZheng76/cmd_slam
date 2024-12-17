@@ -1,11 +1,11 @@
 #ifndef __TYPEDEFS_BACKEND_HPP__
 #define __TYPEDEFS_BACKEND_HPP__
-//#define EIGEN_DONT_ALIGN
+// #define EIGEN_DONT_ALIGN
 #include <Eigen/Core>
 #include <flann/flann.hpp>
-#include <sophus/sim3.hpp>
 #include <memory>
 #include <queue>
+#include <sophus/sim3.hpp>
 
 #include "cmd_comm.hpp"
 #include "utils.hpp"
@@ -102,7 +102,7 @@ using Matrix = Eigen::MatrixXd;
 
 using InformationMat = Matrix7Type;
 
-using VecSim3 = Eigen::Vector<double, 7>;
+using VecSim3 = Eigen::Matrix<double, 7, 1>;
 
 }  // namespace cmd
 

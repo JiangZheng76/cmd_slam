@@ -29,7 +29,7 @@ find_package(yaml-cpp REQUIRED)
 find_package(Pangolin REQUIRED)
 find_package(GTest REQUIRED)
 set(GTSAM_INCLUDE_DIR /home/sysu/gtsam)
-set(GTSAM_LIB /home/sysu/gtsam/build/gtsam/libgtsam.so.4.3a0)
+set(GTSAM_LIB /home/sysu/gtsam/build/gtsam/libgtsam.so)
 # find_package(Eigen3 REQUIRED)
 
 set(EIGEN3_INCLUDE_DIRS /home/sysu/eigen-3.4.0)
