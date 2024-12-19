@@ -35,6 +35,10 @@ class PcmSolver {
 
   void Run();
 
+  void ceresSim3Optimize(std::vector<FactorGraph>& full_fgs,
+                         std::vector<Sim3LoopframeValue>& full_values,
+                         std::vector<bool>& need_optimize_idx);
+
   void updateDataAfterOptimize(std::vector<bool>& need_optimize_idx,
                                std::vector<Sim3LoopframeValue>& sim3_values);
 

@@ -51,7 +51,7 @@ void LoopHandler::Run() {
     m_preocessed_lf.push_back(query_frame);
     // 没有对尺度优化信息的不进行优化
     if (m_lidar_range < 0 || query_frame->m_scale_error < 0) {
-      SYLAR_LOG_INFO(g_logger_sys) << "skip loopframe " << query_frame->m_lf_id;
+      // SYLAR_LOG_INFO(g_logger_sys) << "skip loopframe " << query_frame->m_lf_id;
       usleep(500);
       continue;
     }

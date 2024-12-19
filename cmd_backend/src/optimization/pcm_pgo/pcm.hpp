@@ -34,10 +34,11 @@ class Pcm : public OutlierRemoval {
 
   void incrementAdjMatrix(const ObservationId &id, const LoopEdge &factor);
 
-  bool areLoopsConsistent(const LoopEdge &a_lcBetween_b,
-                          const LoopEdge &c_lcBetween_d, double &dist);
+  bool areLoopsConsistent(const LoopEdge &lc_a2b, const LoopEdge &lc_c2d,
+                          double &dist, double &rot_dist);
 
-  bool checkLoopConsistent(TransMatrixType &result, double &dist);
+  bool checkLoopConsistent(TransMatrixType &result, double &dist,
+                           double &rot_dist);
 
   void findInliersIncremental(
       const std::unordered_map<ObservationId, size_t> &num_new_loopclosures);
@@ -47,15 +48,16 @@ class Pcm : public OutlierRemoval {
   void buildGraphToOptimize(std::vector<FactorGraph> &output_nfg);
 
   std::vector<LoopframeValue> multirobotValueInitialization(
-      std::vector<LoopframeValue> &input_value);
+      std::vector<LoopframeValue> &input_value,
+      std::vector<LoopframeValue> &output_value);
 
   LoopframeValue getRobotOdomValues(
       const int_t &client_id,
       const TransMatrixType &T_wb_wc = TransMatrixType());
 
-  TransMatrixType CeresRobustPoseAveraging(
-      const TransMatrixVector &input_poses, const double &rot_sigma,
-      const double &trans_sigma);
+  TransMatrixType CeresRobustPoseAveraging(const TransMatrixVector &input_poses,
+                                           const double &rot_sigma,
+                                           const double &trans_sigma);
 
   TransMatrixType gncRobustPoseAveraging(const TransMatrixVector &input_poses,
                                          const double &rot_sigma = 0.1,
@@ -79,7 +81,7 @@ class Pcm : public OutlierRemoval {
   std::vector<FactorGraph> nfg_odom_;
   std::vector<ClientSet> map_clients_;  // 每一个需要优化的 map 的 client
   std::unordered_map<ObservationId, Measurements> loop_closures_;
-  std::unordered_map<int_t, LoopframeValue> odom_trajectories_;
+  std::unordered_map<int_t, LoopframeValue> odom_trajectories_;  // twc
   std::vector<ObservationId> loop_closures_in_order_;
 
   size_t total_lc_, total_good_lc_;

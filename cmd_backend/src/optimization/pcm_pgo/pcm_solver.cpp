@@ -84,17 +84,19 @@ void PcmSolver::updateDataAfterOptimize(
     if (!need_optimize_idx[i]) {
       continue;
     }
-    auto &sim3_values = full_sim3_values[i];
+    const auto &sim3_values = full_sim3_values[i];
     auto &values = values_[i];
     // 记录原有的帧
     std::unordered_map<int_t, std::pair<int_t, TransMatrixType>> record;
-    for (auto &sval : sim3_values) {
+    for (const auto &sval : sim3_values) {
       auto key = sval.first;
       auto client = GetKeyClientID(key);
       auto id = GetKeyLoopframeID(key);
 
-      EigenMatrix sim_matrix = Sophus::Sim3d::exp(sval.second).matrix();
-      auto twc = ToOrthogonalTrans(sim_matrix);
+      // ceres 优化时候需要 tcw 优化结束之后转回 twc
+      auto sim3_tcw = Sophus::Sim3d::exp(sval.second);
+      auto twc =
+          ToOrthogonalTrans(Sim3LoopframeValue::ToTwcSE3(sim3_tcw).matrix());
 
       // 记录id最大一帧的位姿
       if (record.find(client) == record.end() || record[client].first < id) {
@@ -103,11 +105,6 @@ void PcmSolver::updateDataAfterOptimize(
       same_value_nums += (values[key].matrix() == twc.matrix());
       diff_value_nums += (values[key].matrix() != twc.matrix());
       values[key] = twc;
-    }
-    if (debug()) {
-      SYLAR_LOG_DEBUG(g_logger_sys)
-          << "same value nums : " << same_value_nums
-          << "diff value nums : " << diff_value_nums << " total nums : " << len;
     }
     // 更新优化过程中新进来的帧
     for (auto &client_id_pose : record) {
@@ -128,25 +125,9 @@ void PcmSolver::updateDataAfterOptimize(
     is_optimized_ = true;
   }
 }
-/// @brief 执行优化主函数
-void PcmSolver::optimize(std::vector<bool> &need_optimize_idx) {
-  std::vector<FactorGraph> full_fgs;
-  std::vector<Sim3LoopframeValue> full_values;
-  {
-    RWMutexType::WriteLock lk(mutex_);
-    need_optimize_ = false;
-    optimizing_ = true;
-
-    int len = need_optimize_idx.size();
-    full_fgs.resize(len);
-    full_values.resize(len);
-    for (int i = 0; i < len; i++) {
-      if (need_optimize_idx[i]) {
-        full_fgs[i] = nfg_[i];
-        full_values[i].insertByLoopframeValue(values_[i]);
-      }
-    }
-  }
+void PcmSolver::ceresSim3Optimize(std::vector<FactorGraph> &full_fgs,
+                                  std::vector<Sim3LoopframeValue> &full_values,
+                                  std::vector<bool> &need_optimize_idx) {
   int len = need_optimize_idx.size();
   for (int i = 0; i < len; i++) {
     if (!need_optimize_idx[i]) {
@@ -212,12 +193,31 @@ void PcmSolver::optimize(std::vector<bool> &need_optimize_idx) {
       // SYLAR_LOG_DEBUG(g_logger_sys) << summary.FullReport();
     }
   }
+}
+/// @brief 执行优化主函数
+void PcmSolver::optimize(std::vector<bool> &need_optimize_idx) {
+  std::vector<FactorGraph> full_fgs;
+  std::vector<Sim3LoopframeValue> full_values;
   {
     RWMutexType::WriteLock lk(mutex_);
-    // 更新数据
-    updateDataAfterOptimize(need_optimize_idx, full_values);
-    SYLAR_LOG_INFO(g_logger_sys) << "Finish Optimize.";
+    need_optimize_ = false;
+    optimizing_ = true;
+
+    int len = need_optimize_idx.size();
+    full_fgs.resize(len);
+    full_values.resize(len);
+    for (int i = 0; i < len; i++) {
+      if (need_optimize_idx[i]) {
+        full_fgs[i] = nfg_[i];
+        full_values[i].insertByLoopframeValue(values_[i]);
+      }
+    }
   }
+  ceresSim3Optimize(full_fgs, full_values, need_optimize_idx);
+  RWMutexType::WriteLock lk(mutex_);
+  // 更新数据
+  updateDataAfterOptimize(need_optimize_idx, full_values);
+  SYLAR_LOG_INFO(g_logger_sys) << "Finish Optimize.";
 }
 /// @brief 检查是否启动优化
 /// @return
@@ -232,7 +232,7 @@ void PcmSolver::Run() {
   SYLAR_LOG_INFO(g_logger_sys) << "--> PcmSolver START";
   while (solver_running_) {
     FactorGraph new_factors;
-    LoopframeValue new_vals;  // [key,ref_pose]
+    LoopframeValue new_vals;  // [key,twc]
     LoopEdgeVector les;
     {
       RWMutexType::WriteLock lk(mutex_);

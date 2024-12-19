@@ -160,7 +160,6 @@ void Mapmanager::checkOptimizeAndViewUpdate() {
     update_lfs.reserve(full_values.front().size() * 10);
     int map_id = 0;
     for (const auto &values : full_values) {
-      int same_value_nums = 0, diff_value_nums = 0;
       for (const auto &[key, pose] : values) {
         auto client = GetKeyClientID(key);
         auto id = GetKeyLoopframeID(key);
@@ -176,16 +175,8 @@ void Mapmanager::checkOptimizeAndViewUpdate() {
           SYLAR_ASSERT(false);
         }
         auto lf = fmgrs_[client]->getLoopframeByKFId(id);
-        same_value_nums += (lf->m_twc.matrix() == pose.matrix());
-        diff_value_nums += (lf->m_twc.matrix() != pose.matrix());
         lf->m_twc = pose;
         update_lfs.push_back(lf);
-      }
-      if (debug()) {
-        SYLAR_LOG_DEBUG(g_logger_sys)
-            << "map id " << map_id++ << ",same_value_nums:" << same_value_nums
-            << ",diff_value_nums:" << diff_value_nums
-            << ",total values:" << values.size();
       }
     }
     viewer_->showLoopframes(update_lfs);
@@ -227,9 +218,10 @@ void Mapmanager::processLoopClosures() {
     m_lc_buf.pop_front();
   }
   solver_->insertLoopEdgeAndUpdate(factors, true);
-  if (debug())
-    SYLAR_LOG_DEBUG(g_logger_sys)
-        << "process " << factors.size() << " loopclosures";
+  // if (debug()) {
+  //   SYLAR_LOG_DEBUG(g_logger_sys)
+  //       << "process " << factors.size() << " loopclosures";
+  // }
 }
 void Mapmanager::createConstrant(LoopframePtr from, LoopframePtr to,
                                  TransMatrixType t_tf, precision_t icp_score,

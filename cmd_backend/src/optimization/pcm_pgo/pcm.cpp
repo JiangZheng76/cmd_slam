@@ -106,7 +106,7 @@ void Pcm::mergeCheckAndPreform(
     auto map_b = findAndInsertClient(map_clients_, obs_id.client_b);
 
     if (map_a != map_b) {
-      // a是在前面的
+      // a是在前面的,大 map 的向小 map 合并
       if (map_a > map_b) std::swap(map_a, map_b);
 
       auto &a_value = output_values[map_a];
@@ -224,13 +224,13 @@ bool Pcm::removeOutliers(const FactorGraph &new_factors,
   }
   if (robot_order_.size() > 1) {
     // 给新合并的 robot 位姿进行初始化处理
-    *output_values = multirobotValueInitialization(*output_values);
+    multirobotValueInitialization(*output_values, *output_values);
   }
   buildGraphToOptimize(*output_nfg);
   if (debug() && do_optimize)
     SYLAR_LOG_INFO(g_logger)
-        << " milliseconds. Detected " << total_lc_
-        << " total loop closures with " << total_good_lc_ << " inliers.";
+        << "Detected " << total_lc_ << " total loop closures with "
+        << total_good_lc_ << " inliers.";
   return do_optimize;
 }
 void Pcm::extractNeedOptimizeMap(
@@ -273,14 +273,17 @@ LoopframeValue Pcm::getRobotOdomValues(const int_t &client_id,
                                        const TransMatrixType &T_wb_wc) {
   LoopframeValue robot_values;
   for (const auto &key_pose : odom_trajectories_[client_id]) {
-    auto new_pose = T_wb_wc * key_pose.second;
-    robot_values.insert({key_pose.first, new_pose});
+    auto new_pose = T_wb_wc * key_pose.second;  // T_wb_wc * T_wc_c = T_wb_c
+    // !!! unordered_map insert 如果存在不会改变原有的，而是返回原来的成员迭代器
+    // robot_values.insert({key_pose.first, new_pose});
+    robot_values[key_pose.first] = new_pose;
   }
   return robot_values;
 }
 /// 纠正两帧之间的位姿并且更新 fix_key
 std::vector<LoopframeValue> Pcm::multirobotValueInitialization(
-    std::vector<LoopframeValue> &input_value) {
+    std::vector<LoopframeValue> &input_value,
+    std::vector<LoopframeValue> &output_value) {
   int len = input_value.size();
   std::vector<LoopframeValue> result;
   for (int i = 0; i < len; i++) {
@@ -300,6 +303,9 @@ std::vector<LoopframeValue> Pcm::multirobotValueInitialization(
     // 解决方法：小的向大的看齐，先是以 0 为基准进行调整，然后以 1
     // 为基准调整没有调整的，以此类推，可以达到所有都向 0 看齐
     std::unordered_set<int_t> record_robot;
+    std::unordered_map<int_t, TransMatrixType>
+        client_Tfc;  // 到 first 的变换矩阵，叠加变换
+
     record_robot.insert(first_robot);
     for (auto base_robot_it = clients.begin(); base_robot_it != clients.end();
          base_robot_it++) {
@@ -338,17 +344,22 @@ std::vector<LoopframeValue> Pcm::multirobotValueInitialization(
             to = tmp;
             T_tf = T_tf.inverse();
           }
+          SYLAR_ASSERT2(from->m_client_id == r_base, "from 不是 base!");
           auto from_key = GetKey(from->m_client_id, from->m_lf_id);
           auto to_key = GetKey(to->m_client_id, to->m_lf_id);
 
           auto T_wb_from = odom_trajectories_[r_base][from_key];
           auto T_wi_to = odom_trajectories_[ri][to_key];
 
-          auto T_wb_wi = T_wb_from * T_tf.inverse() * T_wi_to.inverse();
+          auto T_wb_wi = T_wb_from * T_tf.inverse() *
+                         T_wi_to.inverse();  // Tbf * Tft * Tti = Tbi
           T_wb_wi_measured.push_back(T_wb_wi);
         }
         TransMatrixType T_wb_wi_avg = gncRobustPoseAveraging(T_wb_wi_measured);
-        initialized_values.add(getRobotOdomValues(client_i, T_wb_wi_avg));
+        client_Tfc[client_i] =
+            client_Tfc[base_robot] * T_wb_wi_avg;  // 转换到 first 的坐标下
+        initialized_values.add(
+            getRobotOdomValues(client_i, client_Tfc[client_i]));
       }
     }
     // 初始化 fix_key
@@ -357,7 +368,8 @@ std::vector<LoopframeValue> Pcm::multirobotValueInitialization(
     initialized_values.setFixKey(fix_key);
     result.push_back(std::move(initialized_values));
   }
-  return result;
+  output_value = std::move(result);
+  return output_value;
 }
 /// @brief 使用一元边的方式计算平均变换矩阵
 /// @param input_poses
@@ -454,6 +466,7 @@ void Pcm::parseAndIncrementAdjMatrix(
 void Pcm::findInliersIncremental(
     const std::unordered_map<ObservationId, size_t> &num_new_loopclosures) {
   for (const auto &num_lc : num_new_loopclosures) {
+    std::stringstream ss;
     ObservationId robot_pair = num_lc.first;
     std::vector<int> inliers_idx;
     total_good_lc_ = 0;
@@ -470,10 +483,20 @@ void Pcm::findInliersIncremental(
       for (size_t i = 0; i < num_inliers; i++) {
         loop_closures_[robot_pair].consistent_factors.add(
             loop_closures_[robot_pair].factors[inliers_idx[i]]);
+        ss << " " << inliers_idx[i];
       }
     } else {
       // Set of inliers not modified. Don't reset consistent_factors
       num_inliers = prev_maxclique_size;
+    }
+    if (debug() && num_inliers != 0) {
+      auto client_a = robot_pair.client_a;
+      auto client_b = robot_pair.client_b;
+      SYLAR_LOG_DEBUG(g_logger)
+          << "Robot pair: [" << client_a << "," << client_b
+          << "] total factors:" << loop_closures_[robot_pair].factors.size()
+          << " inliers num: " << num_inliers << " inliers ids :[" << ss.str()
+          << "]";
     }
   }
   // 4、 更新总的回环边数目
@@ -491,6 +514,7 @@ void Pcm::findInliers() {
   // 检查更新连续 factor
   while (it != loop_closures_.end()) {
     size_t num_inliers;
+    std::stringstream ss;
     if (loop_consistency_check_) {
       std::vector<int> inliers_idx;
       it->second.consistent_factors = FactorGraph();  // reset
@@ -499,10 +523,24 @@ void Pcm::findInliers() {
       // update inliers, or consistent factors, according to max clique result
       for (size_t i = 0; i < num_inliers; i++) {
         it->second.consistent_factors.add(it->second.factors[inliers_idx[i]]);
+        ss << " " << inliers_idx[i];
       }
     } else {
       it->second.consistent_factors = it->second.factors;
       num_inliers = it->second.factors.size();
+    }
+    if (debug()) {
+      auto client_a = it->first.client_a;
+      auto client_b = it->first.client_b;
+      SYLAR_LOG_DEBUG(g_logger)
+          << "Robot pair: [" << client_a << "," << client_b
+          << "] num_inliers: " << num_inliers << "\n adj matrix: \n"
+          << it->second.adj_matrix.bottomRightCorner<7, 7>()
+          << "\n mah distance matrix: \n"
+          << it->second.dist_matrix.bottomRightCorner<7, 7>()
+          << "\n rot distance matrix: \n"
+          << it->second.rot_matrix.bottomRightCorner<7, 7>()
+          << "\n inliers ids :[" << ss.str() << "]";
     }
     it++;
     total_good_lc_ = total_good_lc_ + num_inliers;
@@ -514,19 +552,25 @@ void Pcm::incrementAdjMatrix(const ObservationId &id, const LoopEdge &factor) {
   size_t num_lc = loop_closures_[id].factors.size();
 
   Matrix new_adj_matrix = Matrix::Zero(num_lc, num_lc);
-  Matrix new_dst_matrix = Matrix::Zero(num_lc, num_lc);
+  Matrix new_dist_matrix = Matrix::Zero(num_lc, num_lc);
+  Matrix new_rot_matrix = Matrix::Zero(num_lc, num_lc);
 
   if (num_lc > 1) {
     new_adj_matrix.topLeftCorner(num_lc - 1, num_lc - 1) =
         loop_closures_[id].adj_matrix;
-    new_dst_matrix.topLeftCorner(num_lc - 1, num_lc - 1) =
+    new_dist_matrix.topLeftCorner(num_lc - 1, num_lc - 1) =
         loop_closures_[id].dist_matrix;
+    new_rot_matrix.topLeftCorner(num_lc - 1, num_lc - 1) =
+        loop_closures_[id].rot_matrix;
     for (size_t i = 0; i < num_lc - 1; i++) {
-      double mah_distance = 0.0;
+      double mah_distance = 0.0, rot_distance = 0.0;
       const auto &factors = loop_closures_[id].factors;
-      bool consistent = areLoopsConsistent(factor, factors[i], mah_distance);
-      new_dst_matrix(num_lc - 1, i) = mah_distance;
-      new_dst_matrix(i, num_lc - 1) = mah_distance;
+      bool consistent =
+          areLoopsConsistent(factor, factors[i], mah_distance, rot_distance);
+      new_dist_matrix(num_lc - 1, i) = mah_distance;
+      new_dist_matrix(i, num_lc - 1) = mah_distance;
+      new_rot_matrix(num_lc - 1, i) = rot_distance;
+      new_rot_matrix(i, num_lc - 1) = rot_distance;
       if (consistent) {
         new_adj_matrix(num_lc - 1, i) = 1;
         new_adj_matrix(i, num_lc - 1) = 1;
@@ -534,10 +578,11 @@ void Pcm::incrementAdjMatrix(const ObservationId &id, const LoopEdge &factor) {
     }
   }
   loop_closures_[id].adj_matrix = new_adj_matrix;
-  loop_closures_[id].dist_matrix = new_dst_matrix;
+  loop_closures_[id].dist_matrix = new_dist_matrix;
+  loop_closures_[id].rot_matrix = new_rot_matrix;
 }
 bool Pcm::areLoopsConsistent(const LoopEdge &lc_a2b, const LoopEdge &lc_c2d,
-                             double &dist) {
+                             double &dist, double &rot_dist) {
   const auto a = lc_a2b.m_from_lf;
   auto a_key = GetKey(a->m_client_id, a->m_lf_id);
 
@@ -568,17 +613,19 @@ bool Pcm::areLoopsConsistent(const LoopEdge &lc_a2b, const LoopEdge &lc_c2d,
   auto robot_ac = GetKeyClientID(a_key);
   auto robot_bd = GetKeyClientID(b_key);
   TransMatrixType t_ac = odom_trajectories_[robot_ac][a_key].inverse() *
-                         odom_trajectories_[robot_ac][c_key];
+                         odom_trajectories_[robot_ac][c_key];  // taw * twc
   TransMatrixType t_db = odom_trajectories_[robot_bd][d_key].inverse() *
-                         odom_trajectories_[robot_bd][b_key];
+                         odom_trajectories_[robot_bd][b_key];  // tdw * twb
 
   TransMatrixType result = t_ac * t_cd * t_db * t_ba;
 
-  return checkLoopConsistent(result, dist);
+  return checkLoopConsistent(result, dist, rot_dist);
 }
-bool Pcm::checkLoopConsistent(TransMatrixType &result, double &dist) {
-  dist = result.translation().norm();
-  double rot_dist = result.rotationMatrix().norm();
+bool Pcm::checkLoopConsistent(TransMatrixType &result, double &dist,
+                              double &rot_dist) {
+  dist = result.translation().norm();  // 二范数
+  dist = sqrt(dist);                   // 实际距离
+  rot_dist = result.rotationMatrix().norm();
   if (dist < params_.dist_trans_threshold &&
       rot_dist < params_.dist_rot_threshold) {
     return true;
