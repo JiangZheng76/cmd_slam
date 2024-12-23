@@ -146,10 +146,11 @@ Mapmanager::~Mapmanager() {
 void Mapmanager::Run() {
   SYLAR_LOG_INFO(g_logger_sys) << "--> START map manager ";
   while (m_runing) {
-    if (checkLoopclosureBuf()) {
-      processLoopClosures();
-    }
-    usleep(1000);
+    checkOptimizeAndViewUpdate();
+    // if (checkLoopclosureBuf()) {
+    //   processLoopClosures();
+    // }
+    usleep(500);
   }
   SYLAR_LOG_INFO(g_logger_sys) << "<-- END map manager ";
 }
@@ -188,7 +189,6 @@ void Mapmanager::checkOptimizeAndViewUpdate() {
 /// @param lf
 /// @return
 bool Mapmanager::addLoopframe(LoopframePtr lf) {
-  checkOptimizeAndViewUpdate();  // 插入更新优化的帧，防止处理同步的问题
   auto client = lf->m_client_id;
   if (fmgrs_.find(client) == fmgrs_.end()) {
     FramemanagerPtr fmgr = std::make_shared<Framemanager>(client);
@@ -229,7 +229,8 @@ void Mapmanager::createConstrant(LoopframePtr from, LoopframePtr to,
   LoopEdgePtr factor = std::make_shared<LoopEdge>(
       from, to, t_tf, icp_score, sc_score, EdgeType::LOOPCLOSURE);
   std::unique_lock<std::mutex> lk(m_mtx_lc_buf);
-  m_lc_buf.push_back(factor);
+  // m_lc_buf.push_back(factor);
+  solver_->insertLoopEdgeAndUpdate({factor}, true);
 }
 
 }  // namespace cmd

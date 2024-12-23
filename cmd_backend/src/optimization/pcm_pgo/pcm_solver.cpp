@@ -36,8 +36,10 @@ void PcmSolver::convertFactorAndValue(const LoopEdgeVector &les,
     // ???
     // 一次错误的优化，会不会导致整个崩掉，从而导致后面正确的优化也会失败呢？（不会，pcm工具里面的
     // odom 不会更新）
-    values.insert({from_key, from->m_twc});
-    values.insert({to_key, to->m_twc});
+    // 第一帧才会放 twd，其他都是放 ref，用于 pcm 里面更新
+    values.insert(
+        {from_key, from->m_is_first ? from->m_twc : from->m_ref_cf[0]});
+    values.insert({to_key, to->m_is_first ? to->m_twc : to->m_ref_cf[0]});
   }
 }
 void PcmSolver::insertLoopEdgeAndUpdate(const LoopEdgeVector &les,
@@ -48,6 +50,7 @@ void PcmSolver::insertLoopEdgeAndUpdate(const LoopEdgeVector &les,
 void PcmSolver::getAllValueToUpdateMap(LoopframeValue &vals) {
   // TODO 获取所有的优化结果
 }
+RWMutexType &PcmSolver::getUpdateLock() { return mutex_; }
 bool PcmSolver::checkIsOptimized(std::vector<LoopframeValue> &values) {
   RWMutexType::ReadLock lk(mutex_);
   if (is_optimized_) {
@@ -64,8 +67,10 @@ void PcmSolver::update(FactorGraph &factors, LoopframeValue &values,
   std::vector<bool> need_optimize_idx;
   {
     RWMutexType::WriteLock lk(mutex_);
-    do_optimize = outlier_removal_->removeOutliers(
-        factors, values, &nfg_, &values_, &need_optimize_idx);
+    do_optimize = outlier_removal_->removeOutliers(factors, values, &nfg_,
+                                                   &values_, last_client_value_,
+                                                   &need_optimize_idx);
+    is_optimized_ = true;
   }
 
   // 唤醒优化
@@ -101,6 +106,7 @@ void PcmSolver::updateDataAfterOptimize(
       // 记录id最大一帧的位姿
       if (record.find(client) == record.end() || record[client].first < id) {
         record[client] = {id, values[key]};
+        last_client_value_[client] = {key, values[key]};
       }
       same_value_nums += (values[key].matrix() == twc.matrix());
       diff_value_nums += (values[key].matrix() != twc.matrix());
@@ -156,7 +162,7 @@ void PcmSolver::ceresSim3Optimize(std::vector<FactorGraph> &full_fgs,
                                 Sim3Parameterization::Size(), local_pose_param);
       if (key_pose.first == fix_key) {
         SYLAR_LOG_DEBUG(g_logger_sys)
-            << "set fix frame: [" << GetKeyClientID(fix_key) << ","
+            << "set fix frame: [client:" << GetKeyClientID(fix_key) << ",id:"
             << GetKeyLoopframeID(fix_key) << "]";
         problem.SetParameterBlockConstant(key_pose.second.data());
       }
@@ -217,7 +223,6 @@ void PcmSolver::optimize(std::vector<bool> &need_optimize_idx) {
   RWMutexType::WriteLock lk(mutex_);
   // 更新数据
   updateDataAfterOptimize(need_optimize_idx, full_values);
-  SYLAR_LOG_INFO(g_logger_sys) << "Finish Optimize.";
 }
 /// @brief 检查是否启动优化
 /// @return

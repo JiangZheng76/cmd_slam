@@ -45,9 +45,12 @@ int findAndInsertClient(std::vector<ClientSet> &map_client, int_t client) {
   return len;
 }
 /// 分类到 output_value 中
-void Pcm::classifyNewLoopframeToMap(const LoopframeValue &new_loopframes,
-                                    std::vector<LoopframeValue> *output_values,
-                                    std::vector<FactorGraph> *output_nfg) {
+void Pcm::classifyNewLoopframeToMap(
+    const LoopframeValue &new_loopframes,
+    std::unordered_map<int_t, std::pair<LoopframeKey, TransMatrixType>>
+        &last_client_key_pose,
+    std::vector<LoopframeValue> *output_values,
+    std::vector<FactorGraph> *output_nfg) {
   if (!(map_clients_.size() == output_values->size() &&
         map_clients_.size() == output_nfg->size()) &&
       map_clients_.size() == nfg_odom_.size()) {
@@ -61,9 +64,18 @@ void Pcm::classifyNewLoopframeToMap(const LoopframeValue &new_loopframes,
   }
   // 获取所有的 client
   std::set<int> clients;
+  std::unordered_map<int, std::vector<std::pair<int, TransMatrixType>>>
+      new_loopframes_ordered;
   for (const auto &[key, pose] : new_loopframes) {
     auto client = GetKeyClientID(key);
+    auto id = GetKeyLoopframeID(key);
     clients.insert(client);
+    new_loopframes_ordered[client].push_back({id, pose});
+  }
+  // id 升序
+  for (auto &[client, tmp] : new_loopframes_ordered) {
+    sort(tmp.begin(), tmp.end(),
+         [](const auto &a, const auto &b) { return a.first < b.first; });
   }
   for (auto client : clients) {
     findAndInsertClient(map_clients_, client);  // 返回client所在的 id
@@ -77,12 +89,35 @@ void Pcm::classifyNewLoopframeToMap(const LoopframeValue &new_loopframes,
     output_nfg->resize(target_size);
     nfg_odom_.resize(target_size);
   }
-  for (auto &[key, pose] : new_loopframes) {
-    // 插入到对应的 values 中
-    // 创建 map_clients_成员
-    auto client = GetKeyClientID(key);
-    int map_id = findAndInsertClient(map_clients_, client);
-    (*output_values)[map_id].insert({key, pose});
+
+  for (auto &[client, id_pose] : new_loopframes_ordered) {
+    for (auto &[id, pose] : id_pose) {
+      // 插入到对应的 values 中
+      // 创建 map_clients_成员
+      int map_id = findAndInsertClient(map_clients_, client);
+      auto key = GetKey(client, id);
+      if ((*output_values)[map_id].find(key) !=
+          (*output_values)[map_id].end()) {
+        continue;
+      }
+      if (last_client_key_pose.find(client) != last_client_key_pose.end()) {
+        auto twp = last_client_key_pose[client].second;  // twp
+        auto prev_key = last_client_key_pose[client].first;
+        auto prev_id = GetKeyLoopframeID(prev_key);
+        auto tpc = pose.inverse();
+        if (prev_id + 1 != id) {
+          SYLAR_LOG_ERROR(g_logger)
+              << "id error prev_id:" << prev_id << ", id:" << id;
+          SYLAR_ASSERT(prev_id + 1 == id);
+        }
+        auto twc = twp * tpc;  // twp * tpc
+        last_client_key_pose[client] = {key, twc};
+        (*output_values)[map_id][key] = twc;
+      } else {
+        last_client_key_pose[client] = {key, pose};  // first frame twc
+        (*output_values)[map_id].insert({key, pose});
+      }
+    }
   }
 }
 void Pcm::mergeCheckAndPreform(
@@ -161,14 +196,24 @@ void Pcm::mergeCheckAndPreform(
     }
   }
 }
-
-bool Pcm::removeOutliers(const FactorGraph &new_factors,
-                         const LoopframeValue &new_loopframes,
-                         std::vector<FactorGraph> *output_nfg,
-                         std::vector<LoopframeValue> *output_values,
-                         std::vector<bool> *need_optimized_map) {
+/// @brief
+/// @param new_factors
+/// @param new_loopframes [key,tcf]
+/// @param output_nfg
+/// @param output_values
+/// @param last_client_key_pose
+/// @param need_optimized_map
+/// @return
+bool Pcm::removeOutliers(
+    const FactorGraph &new_factors, const LoopframeValue &new_loopframes,
+    std::vector<FactorGraph> *output_nfg,
+    std::vector<LoopframeValue> *output_values,
+    std::unordered_map<int_t, std::pair<LoopframeKey, TransMatrixType>>
+        &last_client_key_pose,
+    std::vector<bool> *need_optimized_map) {
   // 1、将新帧插分类到不同的位置中
-  classifyNewLoopframeToMap(new_loopframes, output_values, output_nfg);
+  classifyNewLoopframeToMap(new_loopframes, last_client_key_pose, output_values,
+                            output_nfg);
 
   if (new_factors.size() == 0) {
     return false;

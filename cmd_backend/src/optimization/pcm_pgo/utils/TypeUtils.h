@@ -36,10 +36,9 @@ inline int_t GetKeyLoopframeID(const LoopframeKey &key) {
 inline LoopframeKey GetKey(int_t client_id, int_t loopframe_id) {
   return (static_cast<uint64_t>(client_id) << 32) | loopframe_id;
 }
-class LoopframeValue
-    : public std::unordered_map<LoopframeKey, TransMatrixType> {
+class LoopframeValue : public std::map<LoopframeKey, TransMatrixType> {
  public:
-  LoopframeValue() : std::unordered_map<LoopframeKey, TransMatrixType>() {}
+  LoopframeValue() : std::map<LoopframeKey, TransMatrixType>() {}
   void add(const LoopframeValue &vals) {
     for (auto v : vals) {
       auto key = v.first;
@@ -72,10 +71,10 @@ class LoopframeValue
 };
 class Sim3LoopframeValue : public std::unordered_map<LoopframeKey, VecSim3> {
  public:
-  static Sophus::Sim3d ToCeresTcwSim3(const TransMatrixType &trans){
+  static Sophus::Sim3d ToCeresTcwSim3(const TransMatrixType &trans) {
     return Sophus::Sim3d(trans.matrix().inverse());
   }
-  static TransMatrixType ToTwcSE3(Sophus::Sim3d& sim3){
+  static TransMatrixType ToTwcSE3(Sophus::Sim3d &sim3) {
     return TransMatrixType(ToOrthogonalTrans(sim3.matrix().inverse()));
   }
   void insertByLoopframeValue(const LoopframeValue &values) {
@@ -86,11 +85,6 @@ class Sim3LoopframeValue : public std::unordered_map<LoopframeKey, VecSim3> {
       insert({key, sim3_t_cw});
     }
     fix_key_ = values.getFixKey();
-    if (debug()) {
-      SYLAR_LOG_DEBUG(SYLAR_LOG_ROOT())
-          << "set fix_key [client:" << GetKeyClientID(fix_key_)
-          << ",id:" << GetKeyLoopframeID(fix_key_) << "]";
-    }
   }
   LoopframeKey getFixKey() { return fix_key_; }
 

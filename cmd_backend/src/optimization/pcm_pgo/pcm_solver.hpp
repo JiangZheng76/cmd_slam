@@ -44,6 +44,8 @@ class PcmSolver {
 
   bool checkIsOptimized(std::vector<LoopframeValue>& values);
 
+  RWMutexType& getUpdateLock();
+
   MapPtr getMap();
 
  private:
@@ -56,6 +58,8 @@ class PcmSolver {
   bool is_optimized_;  // view 更新
   std::unordered_set<int_t>
       need_optimize_clients_;  // 需要优化的client，会累计，重复的会合并
+  std::unordered_map<int_t, std::pair<LoopframeKey, TransMatrixType>>
+      last_client_value_;      // 保存每一个 client 当前最新的位姿
 
   bool solver_running_;  // 优化线程
   RWMutexType mutex_;    // 读写里面数据的互斥变量

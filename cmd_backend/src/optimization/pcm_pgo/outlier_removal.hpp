@@ -17,11 +17,13 @@ class OutlierRemoval {
   virtual size_t getNumOdomFactors() = 0;
   virtual size_t getNumSpecialFactors() = 0;
 
-  virtual bool removeOutliers(const FactorGraph &new_factors,
-                              const LoopframeValue &new_loopframes,
-                              std::vector<FactorGraph> *nfg,
-                              std::vector<LoopframeValue> *values,
-                              std::vector<bool> *need_optimized_map) = 0;
+  virtual bool removeOutliers(
+      const FactorGraph &new_factors, const LoopframeValue &new_loopframes,
+      std::vector<FactorGraph> *output_nfg,
+      std::vector<LoopframeValue> *output_values,
+      std::unordered_map<int_t, std::pair<LoopframeKey, TransMatrixType>>
+          &last_client_key_pose,
+      std::vector<bool> *need_optimized_map) = 0;
 
   virtual void saveData(std::string folder_path) {}
 

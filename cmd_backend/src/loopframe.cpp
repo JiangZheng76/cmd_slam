@@ -59,6 +59,9 @@ Loopframe::Loopframe(MsgLoopframePtr msg, bool first_loopframe)
   for (auto &tcf : msg->m_ref_cf) {
     m_ref_cf.push_back(TransMatrixType(tcf));
   }
+  if(m_ref_cf.size() == 0){
+    m_is_first = true;
+  }
 
   m_dso_error = msg->m_dso_error * DSO_ERROR_SCALE;
   m_scale_error = msg->m_scale_error * SCALE_ERROR_SCALE;
