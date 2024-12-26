@@ -22,9 +22,9 @@ void MsgLoopframe::setMsgType(MsgType msgtype) { m_msgtype = msgtype; }
 std::string MsgLoopframe::dump() {
   std::stringstream ss;
   ss << "MsgLoopframe INFO: "
-     << "[lf id: " << m_lf_id << ",client id: " << m_client_id
+     << "[client:" << m_client_id << ",id:" << m_lf_id << "]"
      << ",incoming id: " << m_incoming_id << ",timestamp: " << m_timestamp
-     << ",point nums : " << m_msg_points.size() << "]";
+     << ",point nums : " << m_msg_points.size();
   return ss.str();
 }
 Calibration::Calibration()

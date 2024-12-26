@@ -53,9 +53,9 @@ void PcmSolver::getAllValueToUpdateMap(LoopframeValue &vals) {
 RWMutexType &PcmSolver::getUpdateLock() { return mutex_; }
 bool PcmSolver::checkIsOptimized(std::vector<LoopframeValue> &values) {
   RWMutexType::ReadLock lk(mutex_);
-  if (is_optimized_) {
+  if (update_optimized_view_) {
     values = values_;
-    is_optimized_ = false;
+    update_optimized_view_ = false;
     return true;
   }
   return false;
@@ -70,14 +70,17 @@ void PcmSolver::update(FactorGraph &factors, LoopframeValue &values,
     do_optimize = outlier_removal_->removeOutliers(factors, values, &nfg_,
                                                    &values_, last_client_value_,
                                                    &need_optimize_idx);
-    is_optimized_ = true;
+    if(is_optimized_){
+      is_optimized_ = false;
+      update_optimized_view_ = true;
+    } 
   }
 
   // 唤醒优化
   if (do_optimize && optimize_graph) {
-    SYLAR_LOG_INFO(g_logger_sys) << "--> RPGO START ";
+    SYLAR_LOG_INFO(g_logger_sys) << "--> RPGO" << "\e[1;31m START \e[0m";
     optimize(need_optimize_idx);
-    SYLAR_LOG_INFO(g_logger_sys) << "<-- RPGO END ";
+    SYLAR_LOG_INFO(g_logger_sys) << "<-- RPGO" << "\e[1;33m END \e[0m";
   }
 }
 void PcmSolver::updateDataAfterOptimize(
@@ -152,6 +155,9 @@ void PcmSolver::ceresSim3Optimize(std::vector<FactorGraph> &full_fgs,
 
     auto fix_key = full_value.getFixKey();
     if (full_value.find(fix_key) == full_value.end()) {
+      SYLAR_LOG_FATAL(g_logger_sys)
+          << "fix key not found [client:" << GetKeyClientID(fix_key) << ","
+          << GetKeyLoopframeID(fix_key) << "]";
       SYLAR_ASSERT(false);
     }
     auto fix_pose = full_value[fix_key];
@@ -162,8 +168,8 @@ void PcmSolver::ceresSim3Optimize(std::vector<FactorGraph> &full_fgs,
                                 Sim3Parameterization::Size(), local_pose_param);
       if (key_pose.first == fix_key) {
         SYLAR_LOG_DEBUG(g_logger_sys)
-            << "set fix frame: [client:" << GetKeyClientID(fix_key) << ",id:"
-            << GetKeyLoopframeID(fix_key) << "]";
+            << "set fix frame: [client:" << GetKeyClientID(fix_key)
+            << ",id:" << GetKeyLoopframeID(fix_key) << "]";
         problem.SetParameterBlockConstant(key_pose.second.data());
       }
     }
@@ -255,8 +261,8 @@ void PcmSolver::Run() {
         SYLAR_LOG_DEBUG(g_logger_sys)
             << "PcmSolver process " << new_factors.size() << " factors.";
       }
-      update(new_factors, new_vals);
     }
+    update(new_factors, new_vals);
     usleep(500);
   }
   SYLAR_LOG_INFO(g_logger_sys) << "<-- pcm solver optimize thread is end.";

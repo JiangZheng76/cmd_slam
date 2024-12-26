@@ -26,12 +26,18 @@ class FactorGraph : public std::vector<LoopEdge> {
 using LoopframeKey = uint64_t;
 inline int_t GetKeyClientID(const LoopframeKey &key) {
   int_t client_id = static_cast<uint32_t>(key >> 32);
-  SYLAR_ASSERT(client_id != 0);
+  // SYLAR_ASSERT(client_id != 0);
   return client_id;
 }
 inline int_t GetKeyLoopframeID(const LoopframeKey &key) {
   int_t loopframe_id = static_cast<uint32_t>(key & 0xFFFFFFFF);
   return loopframe_id;
+}
+inline std::string DumpKey(const LoopframeKey &key) {
+  std::ostringstream oss;
+  oss << "[cleint:" << GetKeyClientID(key) << ",id:" << GetKeyLoopframeID(key)
+      << "]";
+  return oss.str();
 }
 inline LoopframeKey GetKey(int_t client_id, int_t loopframe_id) {
   return (static_cast<uint64_t>(client_id) << 32) | loopframe_id;
@@ -65,6 +71,17 @@ class LoopframeValue : public std::map<LoopframeKey, TransMatrixType> {
   }
   LoopframeKey getFixKey() const { return fix_key_; }
   void setFixKey(LoopframeKey key) { fix_key_ = key; }
+  void initFixKey(LoopframeKey key) {
+    if (fix_key_ == 0) {
+      fix_key_ = key;
+    } else {
+      SYLAR_LOG_WARN(SYLAR_LOG_ROOT())
+          << "Fix key is initialized, please check the logic first."
+          << "[client:" << GetKeyClientID(key)
+          << ",id:" << GetKeyLoopframeID(key) << "]";
+      SYLAR_ASSERT(false);
+    }
+  }
 
  private:
   LoopframeKey fix_key_;

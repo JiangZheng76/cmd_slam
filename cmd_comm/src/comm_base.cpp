@@ -7,6 +7,7 @@ CommunicatorBase::CommunicatorBase() {}
 CommunicatorBase::CommunicatorBase(int client_id, SocketPtr sock)
     : SocketStream(sock, true), m_client_id(client_id), m_sock(sock) {}
 void CommunicatorBase::action() {
+  InitAndGetDuringTime(true);
   m_main_thread.reset(new Thread(std::bind(&CommunicatorBase::Run, this),
                                  "Communicator thread"));
 }
@@ -61,6 +62,7 @@ int CommunicatorBase::sendAll(MsgType &msg_send) {
   int len = msg_send.size();
   size_t byte_left = len * sizeof(msg_send[0]);
   int rt = write(&msg_send[0], byte_left);
+  collectTotalSendByte(rt);
   return rt;
 }
 /// @brief 先发送 MsgType 信息，再发送 msg package
@@ -70,8 +72,30 @@ int CommunicatorBase::sendAll(std::stringstream &msg) {
   // SocketStream ss(m_sock,false);
   std::string tmp_msg = msg.str();
   int rt = write(&tmp_msg[0], tmp_msg.size());
+  collectTotalSendByte(tmp_msg.size());
   return rt;
 }
+size_t CommunicatorBase::collectTotalSendByte(int bytes) {
+  if (bytes != -1) {
+    totalSendBytes_ += bytes;
+  }
+  return totalSendBytes_;
+}
+size_t CommunicatorBase::collectTotalRecvByte(int bytes) {
+  if (bytes != -1) {
+    totalRecvBytes_ += bytes;
+  }
+  return totalRecvBytes_;
+}
+long CommunicatorBase::InitAndGetDuringTime(bool reset) {
+  if (reset) {
+    start_time_ = std::chrono::steady_clock::now();
+  }
+  return std::chrono::duration_cast<std::chrono::seconds>(
+             std::chrono::steady_clock::now() - start_time_)
+      .count();
+}
+inline double calculateRate(double bytes, double time) { return bytes / time; }
 int CommunicatorBase::recvAll(unsigned int sz, std::vector<char> &buffer) {
   size_t tot_bytes = 0;
   size_t n_bytes;
@@ -82,17 +106,42 @@ int CommunicatorBase::recvAll(unsigned int sz, std::vector<char> &buffer) {
     if (n_bytes <= 0) {
       if (n_bytes == 0) {
         SYLAR_LOG_INFO(g_logger_sys)
-            << "------- selectserver: socket hung up. -------";
+            << "------- selectserver: [client:" << m_client_id
+            << "] hung up. -------\n"
+            << "during time: " << InitAndGetDuringTime(false) << "s\n"
+            << "send bytes: " << collectTotalSendByte(0) / 1024 << "KB\n"
+            << "send rate: "
+            << calculateRate(collectTotalSendByte(0) / 1024,
+                             InitAndGetDuringTime(false))
+            << "KB/s\n"
+            << "recv bytes: " << collectTotalRecvByte(0) / 1024 << "KB\n"
+            << "recv rate: "
+            << calculateRate(collectTotalRecvByte(0) / 1024,
+                             InitAndGetDuringTime(false))
+            << "KB/s\n";
       } else {
         perror("recv");
         SYLAR_LOG_ERROR(g_logger_sys)
-            << "------- selectserver: socket ERROR! -------";
+            << "------- selectserver: [client:" << m_client_id
+            << "] socket ERROR! -------\n"
+            << "during time: " << InitAndGetDuringTime(false) << "s\n"
+            << "send bytes: " << collectTotalSendByte(0) / 1024 << "KB\n"
+            << "send rate: "
+            << calculateRate(collectTotalSendByte(0) / 1024,
+                             InitAndGetDuringTime(false))
+            << "KB/s\n"
+            << "recv bytes: " << collectTotalRecvByte(0) / 1024 << "KB\n"
+            << "recv rate: "
+            << calculateRate(collectTotalRecvByte(0) / 1024,
+                             InitAndGetDuringTime(false))
+            << "KB/s\n";
       }
       m_sock->dump(std::cout) << std::endl;
       return -1;
     }
     tot_bytes += n_bytes;
   }
+  collectTotalRecvByte(tot_bytes);
   // 表示成功
   return 0;
 }
@@ -111,17 +160,42 @@ int CommunicatorBase::recvAll(unsigned int sz, MsgType &buffer) {
     if (n_bytes <= 0) {
       if (n_bytes == 0) {
         SYLAR_LOG_INFO(g_logger_sys)
-            << "------- selectserver: socket hung up. -------";
+            << "------- selectserver: [client:" << m_client_id
+            << "] hung up. -------\n"
+            << "during time: " << InitAndGetDuringTime(false) << "s\n"
+            << "send bytes: " << collectTotalSendByte(0) / 1024 << "KB\n"
+            << "send rate: "
+            << calculateRate(collectTotalSendByte(0) / 1024,
+                             InitAndGetDuringTime(false))
+            << "KB/s\n"
+            << "recv bytes: " << collectTotalRecvByte(0) / 1024 << "KB\n"
+            << "recv rate: "
+            << calculateRate(collectTotalRecvByte(0) / 1024,
+                             InitAndGetDuringTime(false))
+            << "KB/s\n";
       } else {
         perror("recv");
         SYLAR_LOG_ERROR(g_logger_sys)
-            << "------- selectserver: socket ERROR! -------";
+            << "------- selectserver: [client:" << m_client_id
+            << "] socket ERROR! -------\n"
+            << "during time: " << InitAndGetDuringTime(false) << "s\n"
+            << "send bytes: " << collectTotalSendByte(0) / 1024 << "KB\n"
+            << "send rate: "
+            << calculateRate(collectTotalSendByte(0) / 1024,
+                             InitAndGetDuringTime(false))
+            << "KB/s\n"
+            << "recv bytes: " << collectTotalRecvByte(0) / 1024 << "KB\n"
+            << "recv rate: "
+            << calculateRate(collectTotalRecvByte(0) / 1024,
+                             InitAndGetDuringTime(false))
+            << "KB/s\n";
       }
       m_sock->dump(std::cout) << std::endl;
       return -1;
     }
     tot_bytes += n_bytes;
   }
+  collectTotalRecvByte(tot_bytes);
   return 0;
 }
 /// @brief 接收数据的线程

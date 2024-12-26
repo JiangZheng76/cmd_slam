@@ -100,7 +100,7 @@ void Framemanager::genImiLidarScan(LoopframePtr lf) {
     float cy = lf->m_calib.getCy();
     float fx = lf->m_calib.getFx();
     float fy = lf->m_calib.getFy();
-    TransMatrixType Twc = lf->m_twc;
+    TransMatrixType Twc = lf->m_original_twc;
     int cur_id = lf->m_lf_id;
     for (const auto &p : lf->m_points) {
       Eigen::Vector4d p_c((p.m_u - cx) / fx / p.m_idepth_scaled,
@@ -194,8 +194,6 @@ bool Mapmanager::addLoopframe(LoopframePtr lf) {
     FramemanagerPtr fmgr = std::make_shared<Framemanager>(client);
     fmgrs_.insert({fmgr->m_clientId, fmgr});
   }
-  auto &fmgr = fmgrs_[client];
-  fmgr->addLoopframe(lf);
 
   // 添加到 pcm 里面
   LoopEdgeVector pcm_les;
@@ -204,6 +202,8 @@ bool Mapmanager::addLoopframe(LoopframePtr lf) {
   }
   // pcm_les 这里的 le 是纯里程计约束
   solver_->insertLoopEdgeAndUpdate(pcm_les, true);
+  auto &fmgr = fmgrs_[client];
+  fmgr->addLoopframe(lf);
   viewer_->showLoopframes(lf);
   return true;
 }

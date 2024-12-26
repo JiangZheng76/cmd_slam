@@ -112,17 +112,17 @@ void LoopHandler::Run() {
         // 第一帧对于icp的要求严格一点
         if (!icp_succ) {
           SYLAR_LOG_DEBUG(g_logger_sys)
-              << "[agent id:" << query_frame->m_client_id
-              << ",id:" << query_frame->m_lf_id << "]-"
-              << "[agent id:" << matched_frame->m_client_id
+              << "[client:" << query_frame->m_client_id
+              << ",id:" << query_frame->m_lf_id << "]->"
+              << "[client:" << matched_frame->m_client_id
               << ",id:" << matched_frame->m_lf_id << "] " << icp_error
               << " No";
           continue;
         } else {
           SYLAR_LOG_DEBUG(g_logger_sys)
-              << "[agent id:" << query_frame->m_client_id
-              << ",id:" << query_frame->m_lf_id << "]-"
-              << "[agent id:" << matched_frame->m_client_id
+              << "[client:" << query_frame->m_client_id
+              << ",id:" << query_frame->m_lf_id << "]->"
+              << "[client:" << matched_frame->m_client_id
               << ",id:" << matched_frame->m_lf_id << "] " << icp_error
               << " \033[1;32m Yes \033[0m";
         }

@@ -82,6 +82,9 @@ class CommunicatorBase : public SocketStream {
   virtual int sendAll(std::stringstream &msg);
   virtual int recvAll(unsigned int sz, std::vector<char> &buffer);
   virtual int recvAll(unsigned int sz, MsgType &buffer);
+  virtual size_t collectTotalRecvByte(int bytes);
+  virtual size_t collectTotalSendByte(int bytes);
+  virtual long InitAndGetDuringTime(bool reset);
   virtual void recvMsg();
   virtual void writeToBuffer();
   virtual bool checkBufferAndPop();  // Attention: Removes data from buffer, do
@@ -106,7 +109,9 @@ class CommunicatorBase : public SocketStream {
   // recored bandwidth
   double bytes_sent = 0;
   double bytes_recv = 0;
-  std::chrono::_V2::steady_clock::time_point start_time;
+  size_t totalSendBytes_ = 0;
+  size_t totalRecvBytes_ = 0;
+  std::chrono::_V2::steady_clock::time_point start_time_;
   std::chrono::_V2::steady_clock::time_point end_time;
 
   void showResult();

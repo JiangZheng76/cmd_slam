@@ -40,6 +40,7 @@ class PangolinViewer {
 
   void updateDisplay();
   void getColors(std::vector<float>& color);
+  void saveTrajectory(const std::string &filename) ;
 
  private:
   int colors_index_ = 0;

@@ -34,13 +34,13 @@ struct PcmParams {
  public:
   PcmParams()
       : odom_threshold(10.0),
-        lc_threshold(5.0),
-        odom_trans_threshold(0.05),
-        odom_rot_threshold(0.005),
+        lc_threshold(10.0),
+        odom_trans_threshold(10.0),
+        odom_rot_threshold(2.0),
         // dist_trans_threshold(0.01),
         // dist_rot_threshold(0.001),
-        dist_trans_threshold(5.0),  // 距离 10m
-        dist_rot_threshold(2.0),
+        dist_trans_threshold(10.0),  // 距离 10m
+        dist_rot_threshold(5.0),
         incremental(true) {}
   // if threshold is < 0, check disabled
   // for Pcm

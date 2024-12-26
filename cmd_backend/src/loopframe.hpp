@@ -68,7 +68,9 @@ class Loopframe : public std::enable_shared_from_this<Loopframe> {
   TransMatrixType m_t_pca_rig;     // transformation from rig to pca frame
 
   Calibration m_calib;    // calib for slam
+  bool m_is_init;
   TransMatrixType m_twc;  // coordinate in pose graph
+  TransMatrixType m_original_twc;  // coordinate in pose graph
 
   // ceres optimization
   VecSim3 m_ceres_pose;  // tcw

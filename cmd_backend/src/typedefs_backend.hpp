@@ -13,13 +13,15 @@
 #define DISTANCE_THRES 35.0
 // loop closure
 #define LIDAR_RANGE 40.0
-#define SCANCONTEXT_THRES 0.33
+// #define SCANCONTEXT_THRES 0.33
+#define SCANCONTEXT_THRES 0.40
 
 // icp
-#define ICP_ITERA_TIME 50
+#define ICP_ITERA_TIME 25
 #define ICP_TRANS_EPSILON 0.01
 #define ICP_EUC_EPSILON 0.001
-#define ICP_THRES 1.5
+// #define ICP_THRES 1.5 
+#define ICP_THRES 1.6 
 
 // optimization
 #define OPT_ROBUST_LOSS 0.5
@@ -116,8 +118,8 @@ using VecSim3 = Eigen::Matrix<double, 7, 1>;
 namespace cmd {
 // display color
 const std::vector<std::vector<precision_t>> col_vec = {
-    {0.55, 0.83, 0.78}, {0.98, 0.50, 0.45}, {0.46, 0.32, 0.05},
     {1.00, 1.00, 0.70}, {0.75, 0.73, 0.85}, {0.99, 0.71, 0.38},
+    {1.00, 0.5, 0.5}, {1.0, 0.50, 1.0}, {0.46, 1.0, 0.8},
     {0.70, 0.87, 0.41}};
 }  // namespace cmd
 

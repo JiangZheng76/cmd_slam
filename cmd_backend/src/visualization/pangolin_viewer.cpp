@@ -1,5 +1,11 @@
 #include "pangolin_viewer.hpp"
 
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#include <iostream>
+
 #include "agent_display.hpp"
 #include "loopframe.hpp"
 #include "typedefs_backend.hpp"
@@ -133,7 +139,47 @@ void PangolinViewer::Run() {
     // 画完递交画面
     pangolin::FinishFrame();
   }
+  // 保存微位姿信息
+  saveTrajectory("Trajectory");
   exit(1);
+}
+void PangolinViewer::saveTrajectory(const std::string &filename) {
+  char buff[FILENAME_MAX];
+  getcwd(buff, sizeof(buff));
+  std::string save_path(buff);
+  save_path += "/" + filename;
+
+  struct stat st;
+  if (!(stat(save_path.c_str(), &st) == 0 && S_ISDIR(st.st_mode))) {
+    int result = mkdir(save_path.c_str(), 0777);
+    if (result == -1) {
+      SYLAR_LOG_INFO(g_logger_sys) << "mkdir " << save_path << " failed";
+      return;
+    }
+  }
+  for (auto &[client, agent] : m_agent_displays) {
+    std::string client_filename =
+        save_path + "/" + std::to_string(client) + ".txt";
+    std::ofstream file_stream(client_filename);
+    if (!file_stream.is_open()) {
+      std::cerr << "Failed to open the file: " << client_filename << std::endl;
+      SYLAR_LOG_ERROR(g_logger_sys)
+          << "Failed to open the file: " << client_filename;
+      break;
+    }
+    for (const auto &lf : agent->m_list_displays) {
+      auto Twc = lf->m_Twc.matrix().transpose();
+      int rows = Twc.rows(), cols = Twc.cols();
+      for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+          file_stream << Twc(j, i) << " ";
+        }
+      }
+      file_stream << std::endl;
+    }
+    file_stream.close();
+    SYLAR_LOG_INFO(g_logger_sys) << "save trajectory to " << client_filename;
+  }
 }
 
 }  // namespace cmd

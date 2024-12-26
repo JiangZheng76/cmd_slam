@@ -56,6 +56,7 @@ class PcmSolver {
   bool optimizing_;
   bool need_optimize_;
   bool is_optimized_;  // view 更新
+  bool update_optimized_view_;  // view 更新
   std::unordered_set<int_t>
       need_optimize_clients_;  // 需要优化的client，会累计，重复的会合并
   std::unordered_map<int_t, std::pair<LoopframeKey, TransMatrixType>>

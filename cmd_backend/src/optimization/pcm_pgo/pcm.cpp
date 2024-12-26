@@ -14,6 +14,7 @@
 #include "loopframe.hpp"
 #include "optimization/pcm_pgo/utils/GeometryUtils.h"
 #include "optimization/pcm_pgo/utils/GraphUtils.h"
+#include "optimization/pcm_pgo/utils/GraphUtils.h"
 // #include "optimization/pose_average.hpp"
 
 namespace cmd {
@@ -115,6 +116,14 @@ void Pcm::classifyNewLoopframeToMap(
         (*output_values)[map_id][key] = twc;
       } else {
         last_client_key_pose[client] = {key, pose};  // first frame twc
+        if ((*output_values)[map_id].size() == 0) {
+          // 初始化第一帧
+          if (debug()) {
+            SYLAR_LOG_DEBUG(g_logger)
+                << "map id:" << map_id << " init fix key " << DumpKey(key);
+          }
+          (*output_values)[map_id].setFixKey(key);
+        }
         (*output_values)[map_id].insert({key, pose});
       }
     }
@@ -528,7 +537,15 @@ void Pcm::findInliersIncremental(
       for (size_t i = 0; i < num_inliers; i++) {
         loop_closures_[robot_pair].consistent_factors.add(
             loop_closures_[robot_pair].factors[inliers_idx[i]]);
-        ss << " " << inliers_idx[i];
+        if (debug()) {
+          auto from =
+              loop_closures_[robot_pair].factors[inliers_idx[i]].m_from_lf;
+          auto to = loop_closures_[robot_pair].factors[inliers_idx[i]].m_to_lf;
+          ss << "\n"
+             << inliers_idx[i] << "[client:" << from->m_client_id
+             << ",id:" << from->m_lf_id << "]->[client:" << to->m_client_id
+             << ",id:" << to->m_lf_id << "]";
+        }
       }
     } else {
       // Set of inliers not modified. Don't reset consistent_factors
