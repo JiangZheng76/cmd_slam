@@ -14,11 +14,10 @@
 #include "loopframe.hpp"
 #include "optimization/pcm_pgo/utils/GeometryUtils.h"
 #include "optimization/pcm_pgo/utils/GraphUtils.h"
-#include "optimization/pcm_pgo/utils/GraphUtils.h"
 // #include "optimization/pose_average.hpp"
 
 namespace cmd {
-static mysylar::Logger::ptr g_logger = SYLAR_LOG_NAME("CMD_BACKEND");
+static LoggerPtr g_logger_solver = SYLAR_LOG_NAME("Solver");
 Pcm::Pcm(PcmParams params, MultiRobotAlignMethod align_method,
          double align_gnc_probability)
     : OutlierRemoval(),
@@ -31,7 +30,7 @@ Pcm::Pcm(PcmParams params, MultiRobotAlignMethod align_method,
       loop_consistency_check_(true) {}
 int findAndInsertClient(std::vector<ClientSet> &map_client, int_t client) {
   if (client == 0 || client == 32) {
-    SYLAR_LOG_ERROR(g_logger) << "invaild client num.";
+    SYLAR_LOG_ERROR(g_logger_solver) << "invaild client num.";
     SYLAR_ASSERT(false);
   }
   int len = map_client.size();
@@ -45,17 +44,32 @@ int findAndInsertClient(std::vector<ClientSet> &map_client, int_t client) {
   map_client.back().insert(client);
   return len;
 }
+bool checkClientIsExist(std::vector<ClientSet> &map_client, int_t client) {
+  int len = map_client.size();
+  for (int i = 0; i < len; i++) {
+    auto &client_set = map_client[i];
+    if (client_set.find(client) != client_set.end()) {
+      return true;
+    }
+  }
+  return false;
+}
+int Pcm::getKeyMap(LoopframeKey key) {
+  auto client = GetKeyClientID(key);
+  auto id = GetKeyLoopframeID(key);
+  SYLAR_ASSERT2(checkClientIsExist(map_clients_, client),
+                "this client is not exist " + DumpKey(key));
+  auto map_id = findAndInsertClient(map_clients_, client);
+  return map_id;
+}
 /// 分类到 output_value 中
-void Pcm::classifyNewLoopframeToMap(
-    const LoopframeValue &new_loopframes,
-    std::unordered_map<int_t, std::pair<LoopframeKey, TransMatrixType>>
-        &last_client_key_pose,
-    std::vector<LoopframeValue> *output_values,
-    std::vector<FactorGraph> *output_nfg) {
+void Pcm::classifyNewLoopframeToMap(const LoopframeValue &new_loopframes,
+                                    std::vector<LoopframeValue> *output_values,
+                                    std::vector<FactorGraph> *output_nfg) {
   if (!(map_clients_.size() == output_values->size() &&
         map_clients_.size() == output_nfg->size()) &&
       map_clients_.size() == nfg_odom_.size()) {
-    SYLAR_LOG_ERROR(g_logger)
+    SYLAR_LOG_ERROR(g_logger_solver)
         << "map 的四个成员长度不一致"
         << "[map_client:" << map_clients_.size() << "]"
         << "[output_values:" << output_values->size() << "]"
@@ -101,31 +115,16 @@ void Pcm::classifyNewLoopframeToMap(
           (*output_values)[map_id].end()) {
         continue;
       }
-      if (last_client_key_pose.find(client) != last_client_key_pose.end()) {
-        auto twp = last_client_key_pose[client].second;  // twp
-        auto prev_key = last_client_key_pose[client].first;
-        auto prev_id = GetKeyLoopframeID(prev_key);
-        auto tpc = pose.inverse();
-        if (prev_id + 1 != id) {
-          SYLAR_LOG_ERROR(g_logger)
-              << "id error prev_id:" << prev_id << ", id:" << id;
-          SYLAR_ASSERT(prev_id + 1 == id);
+      if ((*output_values)[map_id].size() == 0) {
+        // 初始化第一帧
+        if (debug()) {
+          SYLAR_LOG_DEBUG(g_logger_solver)
+              << "map id:" << map_id << " init fix key " << DumpKey(key);
         }
-        auto twc = twp * tpc;  // twp * tpc
-        last_client_key_pose[client] = {key, twc};
-        (*output_values)[map_id][key] = twc;
-      } else {
-        last_client_key_pose[client] = {key, pose};  // first frame twc
-        if ((*output_values)[map_id].size() == 0) {
-          // 初始化第一帧
-          if (debug()) {
-            SYLAR_LOG_DEBUG(g_logger)
-                << "map id:" << map_id << " init fix key " << DumpKey(key);
-          }
-          (*output_values)[map_id].setFixKey(key);
-        }
-        (*output_values)[map_id].insert({key, pose});
+        (*output_values)[map_id].setFixKey(key);
       }
+      // 插入新帧到对应的 values 中
+      (*output_values)[map_id].insert({key, pose});
     }
   }
 }
@@ -136,7 +135,7 @@ void Pcm::mergeCheckAndPreform(
   if (!(map_clients_.size() == output_values.size() &&
         map_clients_.size() == output_nfg.size()) &&
       map_clients_.size() == nfg_odom_.size()) {
-    SYLAR_LOG_ERROR(g_logger)
+    SYLAR_LOG_ERROR(g_logger_solver)
         << "map 的四个成员长度不一致"
         << "[map_client:" << map_clients_.size() << "]"
         << "[output_values:" << output_values.size() << "]"
@@ -197,13 +196,23 @@ void Pcm::mergeCheckAndPreform(
           }
           ss << "]";
         }
-        SYLAR_LOG_DEBUG(g_logger)
+        SYLAR_LOG_DEBUG(g_logger_solver)
             << "merge preform: map[" << map_a << "<-" << map_b << "]"
             << "after merge size is " << output_values.size() << ","
             << "map_client info => " << ss.str();
       }
     }
   }
+}
+TransMatrixType Pcm::getCurrentKeyPose(LoopframeKey key) {
+  auto prev_client = GetKeyClientID(key);
+  auto prev_id = GetKeyLoopframeID(key);
+  if (odom_trajectories_[prev_client].find(key) ==
+      odom_trajectories_[prev_client].end()) {
+    SYLAR_LOG_ERROR(g_logger_solver) << "can not find key:" << DumpKey(key);
+    SYLAR_ASSERT(false);
+  }
+  return odom_trajectories_[prev_client][key];
 }
 /// @brief
 /// @param new_factors
@@ -221,8 +230,8 @@ bool Pcm::removeOutliers(
         &last_client_key_pose,
     std::vector<bool> *need_optimized_map) {
   // 1、将新帧插分类到不同的位置中
-  classifyNewLoopframeToMap(new_loopframes, last_client_key_pose, output_values,
-                            output_nfg);
+  // classifyNewLoopframeToMap(new_loopframes, last_client_key_pose,
+  // output_values, output_nfg);
 
   if (new_factors.size() == 0) {
     return false;
@@ -241,9 +250,10 @@ bool Pcm::removeOutliers(
 
     switch (type) {
       case EdgeType::ODOMETRY: {
-        int_t client = from_client;
-        int map_id = findAndInsertClient(map_clients_, client);
-        updateOdom(map_id, new_factors[i], *output_values);
+        updateOdom(from_client, new_factors[i]);
+        SYLAR_LOG_ERROR(g_logger_solver)
+            << "should be without odom " << DumpKey(from_key);
+        SYLAR_ASSERT(false);
       } break;
       case EdgeType::LOOPCLOSURE:
         // 后面处理
@@ -282,7 +292,7 @@ bool Pcm::removeOutliers(
   }
   buildGraphToOptimize(*output_nfg);
   if (debug() && do_optimize)
-    SYLAR_LOG_INFO(g_logger)
+    SYLAR_LOG_INFO(g_logger_solver)
         << "Detected " << total_lc_ << " total loop closures with "
         << total_good_lc_ << " inliers.";
   return do_optimize;
@@ -302,6 +312,17 @@ void Pcm::extractNeedOptimizeMap(
     SYLAR_ASSERT2(a_map == b_map,
                   "extractNeedOptimizeMap() a_map与 b_map 不相等");
     output_client[a_map] = true;
+  }
+  if (debug()) {
+    std::stringstream ss;
+    len = output_client.size();
+    for (int i = 0; i < len; i++) {
+      if (output_client[i]) {
+        ss << i << " ";
+      }
+    }
+    SYLAR_LOG_DEBUG(g_logger_solver) << "need optimize map is: " << ss.str();
+    SYLAR_LOG_DEBUG(g_logger_solver) << "output_client size is: " << len;
   }
 }
 
@@ -344,7 +365,8 @@ std::vector<LoopframeValue> Pcm::multirobotValueInitialization(
     LoopframeValue initialized_values = input_value[i];
     auto clients = map_clients_[i];
     if (clients.size() == 0) {
-      SYLAR_LOG_WARN(g_logger) << "Map:" << i << ",No robot poses received. ";
+      SYLAR_LOG_WARN(g_logger_solver)
+          << "Map:" << i << ",No robot poses received. ";
       result.push_back(initialized_values);
       continue;
     }
@@ -387,7 +409,7 @@ std::vector<LoopframeValue> Pcm::multirobotValueInitialization(
         FactorGraph lc_factors = loop_closures_.at(obs_id).consistent_factors;
         record_robot.insert(client_i);
         TransMatrixVector T_wb_wi_measured;
-        for (auto &factor : lc_factors) {
+        for (const auto &factor : lc_factors) {
           auto from = factor.m_from_lf;
           auto to = factor.m_to_lf;
           auto T_tf = factor.m_t_tf;
@@ -462,7 +484,7 @@ TransMatrixType Pcm::gncRobustPoseAveraging(
   } else if (multirobot_align_method_ == MultiRobotAlignMethod::GNC) {
     gnc.setInlierCostThresholdsAtProbability(multirobot_gnc_align_probability_);
   } else {
-    SYLAR_LOG_WARN(g_logger)
+    SYLAR_LOG_WARN(g_logger_solver)
         << "Invalid multirobot alignment method in gncRobustPoseAveraging!";
   }
 
@@ -554,11 +576,11 @@ void Pcm::findInliersIncremental(
     if (debug() && num_inliers != 0) {
       auto client_a = robot_pair.client_a;
       auto client_b = robot_pair.client_b;
-      SYLAR_LOG_DEBUG(g_logger)
+      SYLAR_LOG_DEBUG(g_logger_solver)
           << "Robot pair: [" << client_a << "," << client_b
           << "] total factors:" << loop_closures_[robot_pair].factors.size()
-          << " inliers num: " << num_inliers << " inliers ids :[" << ss.str()
-          << "]";
+          << " inliers num: " << num_inliers << " inliers :\n"
+          << ss.str();
     }
   }
   // 4、 更新总的回环边数目
@@ -594,7 +616,7 @@ void Pcm::findInliers() {
     if (debug()) {
       auto client_a = it->first.client_a;
       auto client_b = it->first.client_b;
-      SYLAR_LOG_DEBUG(g_logger)
+      SYLAR_LOG_DEBUG(g_logger_solver)
           << "Robot pair: [" << client_a << "," << client_b
           << "] num_inliers: " << num_inliers << "\n adj matrix: \n"
           << it->second.adj_matrix.bottomRightCorner<7, 7>()
@@ -705,7 +727,7 @@ bool Pcm::isOdomConsistent(LoopEdge &factor, double &dist) {
   TransMatrixType T_cur_prev = factor.m_t_tf;
 
   if (prev->m_client_id != cur->m_client_id) {
-    SYLAR_LOG_WARN(g_logger)
+    SYLAR_LOG_WARN(g_logger_solver)
         << "Only check for odmetry consistency for intrarobot loop closures";
   }
   // TODO 应该是使用 solver里面的位姿还是全局的位姿呢？
@@ -725,37 +747,42 @@ bool Pcm::checkOdomConsistent(TransMatrixType &trans, double &dist) {
   return false;
 }
 
-void Pcm::updateOdom(int map_id, const LoopEdge &factor,
-                     std::vector<LoopframeValue> &output_values) {
+void Pcm::updateOdom(int client, const LoopEdge &factor) {
+  int map_id = findAndInsertClient(map_clients_, client);
   nfg_odom_[map_id].add(factor);
 
   LoopframeKey prev_key =
       GetKey(factor.m_from_lf->m_client_id, factor.m_from_lf->m_lf_id);
   LoopframeKey cur_key =
       GetKey(factor.m_to_lf->m_client_id, factor.m_to_lf->m_lf_id);
+  SYLAR_ASSERT2(
+      GetKeyClientID(prev_key) == GetKeyClientID(cur_key),
+      "prev,cur 不是同一个robot " + DumpKey(prev_key) + DumpKey(cur_key));
 
   LoopframePtr prev = factor.m_from_lf;
   LoopframePtr cur = factor.m_to_lf;
   // 记录里程计位姿
-  auto client = GetKeyClientID(prev_key);
+  // auto client = GetKeyClientID(prev_key);
   if (odom_trajectories_.find(client) == odom_trajectories_.end()) {
     auto initial_pose = prev->m_twc;
     odom_trajectories_[client][prev_key] = initial_pose;
     robot_order_.push_back(client);
     if (debug())
-      SYLAR_LOG_DEBUG(g_logger) << "Create new robot trajectories [client:"
-                                << GetKeyClientID(prev_key)
-                                << ",id:" << GetKeyLoopframeID(prev_key) << "]";
+      SYLAR_LOG_DEBUG(g_logger_solver)
+          << "Create new robot trajectories [client:"
+          << GetKeyClientID(prev_key) << ",id:" << GetKeyLoopframeID(prev_key)
+          << "]";
   }
   TransMatrixType prev_pose;
   if (odom_trajectories_[client].exist(prev_key)) {
     prev_pose = odom_trajectories_[client][prev_key];  // twc
   } else {
-    SYLAR_LOG_ERROR(g_logger) << "Attempted to add odom to non-existing key. "
-                              << "prev:[client:" << GetKeyClientID(prev_key)
-                              << ",id : " << GetKeyLoopframeID(prev_key) << "]"
-                              << "cur:[client:" << GetKeyClientID(cur_key)
-                              << ",id : " << GetKeyLoopframeID(cur_key) << "]";
+    SYLAR_LOG_ERROR(g_logger_solver)
+        << "Attempted to add odom to non-existing key. "
+        << "prev:[client:" << GetKeyClientID(prev_key)
+        << ",id : " << GetKeyLoopframeID(prev_key) << "]"
+        << "cur:[client:" << GetKeyClientID(cur_key)
+        << ",id : " << GetKeyLoopframeID(cur_key) << "]";
     SYLAR_ASSERT2(false, "Attempted to add odom to non-existing key. ");
   }
   odom_trajectories_[client][cur_key] =

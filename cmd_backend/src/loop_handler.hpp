@@ -16,7 +16,7 @@ class LoopHandler {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   LoopHandler(float lidar_range, float scan_context_thres,
-              MapmanagerPtr mapMgr);
+              Mapmanager* mapMgr);
   ~LoopHandler();
 
   void Run();
@@ -43,9 +43,8 @@ class LoopHandler {
   flann::Index<flann::L2<float>> *m_ringkeys;
   ScanContextPtr m_sc;  // scanContext的处理器
 
-  MapmanagerPtr
+  Mapmanager*
       m_mapMgr;  // 用来存储所有帧，并处理帧合并的问题，知道那几个帧是在同一个地图上的
-  PangolinViewerPtr m_viewer;
 };
 
 }  // namespace cmd

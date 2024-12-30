@@ -5,8 +5,6 @@
 #define POSE_R_WEIGHT 100
 
 namespace cmd {
-static LoggerPtr g_logger_sys = SYLAR_LOG_NAME("CMD-SLAM");
-
 Point2::Point2(const MsgPoint &msg)
     : m_u(msg.m_u),
       m_v(msg.m_v),

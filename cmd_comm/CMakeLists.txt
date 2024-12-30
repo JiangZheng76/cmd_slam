@@ -1,8 +1,10 @@
 cmake_minimum_required (VERSION 2.8)
 project(cmd_comm)
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE RelWithDebInfo)
+endif()
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-# set(CMAKE_BUILD_TYPE release)
-set(CMAKE_BUILD_TYPE Release)
 find_package(catkin_simple REQUIRED)
 catkin_simple(ALL_DEPS_REQUIRED)
 set(CMAKE_CXX_STANDARD 17)
@@ -21,10 +23,6 @@ set(INCLUDE_DIRS
     ${PROJECT_SOURCE_DIR}/thrid-party/mysylar/mysylar
     ${PROJECT_SOURCE_DIR}/thrid-party/cereal/include
 )
-
-IF(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE RelWithDebInfo)
-ENDIF()
 set(EIGEN3_INCLUDE_DIRS /home/sysu/eigen-3.4.0)
 # find_package(Eigen3 REQUIRED)
 find_package(Sophus REQUIRED)

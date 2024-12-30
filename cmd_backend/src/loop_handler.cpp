@@ -6,11 +6,9 @@
 #include "loopframe.hpp"
 
 namespace cmd {
-
-static LoggerPtr g_logger_sys = SYLAR_LOG_NAME("LOOP-CLOSURE");
-
+static LoggerPtr g_logger_loop = SYLAR_LOG_NAME("LoopHandler");
 LoopHandler::LoopHandler(float lidar_range, float scan_context_thres,
-                         MapmanagerPtr mapMgr)
+                         Mapmanager* mapMgr)
     : m_lidar_range(lidar_range),
       m_scan_context_thres(scan_context_thres),
       m_mapMgr(mapMgr) {
@@ -30,11 +28,11 @@ LoopHandler::LoopHandler(float lidar_range, float scan_context_thres,
 LoopHandler::~LoopHandler() {
   m_running = false;
   m_main_thread->join();
-  SYLAR_LOG_INFO(g_logger_sys) << " --- join Loop Thread. --- ";
+  SYLAR_LOG_INFO(g_logger_loop) << " --- join Loop Thread. --- ";
   delete m_ringkeys;
 }
 void LoopHandler::Run() {
-  SYLAR_LOG_INFO(g_logger_sys) << "--> START Loop Handler Thread.";
+  SYLAR_LOG_INFO(g_logger_loop) << "--> START Loop Handler Thread.";
   while (m_running) {
     LoopframePtr query_frame = nullptr;
     {
@@ -51,7 +49,7 @@ void LoopHandler::Run() {
     m_preocessed_lf.push_back(query_frame);
     // 没有对尺度优化信息的不进行优化
     if (m_lidar_range < 0 || query_frame->m_scale_error < 0) {
-      // SYLAR_LOG_INFO(g_logger_sys) << "skip loopframe " << query_frame->m_lf_id;
+      // SYLAR_LOG_INFO(g_logger_loop) << "skip loopframe " << query_frame->m_lf_id;
       usleep(500);
       continue;
     }
@@ -111,7 +109,7 @@ void LoopHandler::Run() {
 
         // 第一帧对于icp的要求严格一点
         if (!icp_succ) {
-          SYLAR_LOG_DEBUG(g_logger_sys)
+          SYLAR_LOG_DEBUG(g_logger_loop)
               << "[client:" << query_frame->m_client_id
               << ",id:" << query_frame->m_lf_id << "]->"
               << "[client:" << matched_frame->m_client_id
@@ -119,7 +117,7 @@ void LoopHandler::Run() {
               << " No";
           continue;
         } else {
-          SYLAR_LOG_DEBUG(g_logger_sys)
+          SYLAR_LOG_DEBUG(g_logger_loop)
               << "[client:" << query_frame->m_client_id
               << ",id:" << query_frame->m_lf_id << "]->"
               << "[client:" << matched_frame->m_client_id
@@ -133,13 +131,13 @@ void LoopHandler::Run() {
       }
     }
   }
-  SYLAR_LOG_INFO(g_logger_sys) << "<-- END Loop Handler Thread.";
+  SYLAR_LOG_INFO(g_logger_loop) << "<-- END Loop Handler Thread.";
 }
 
 void LoopHandler::join() {
   m_running = false;
   m_main_thread->join();
-  SYLAR_LOG_INFO(g_logger_sys) << "Main Thread Join.";
+  SYLAR_LOG_INFO(g_logger_loop) << "Main Thread Join.";
 }
 void LoopHandler::close() { join(); }
 void LoopHandler::pushLoopframe2Buf(LoopframePtr lf) {

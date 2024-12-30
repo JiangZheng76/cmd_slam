@@ -47,7 +47,17 @@ inline bool debug() {
   static bool debug_ = true;
   return debug_;
 }
-}  // namespace cmd
+} // namespace cmd
+// logger
+namespace cmd  {
+using namespace mysylar;
+// extern LoggerPtr g_logger_backend;
+// extern LoggerPtr g_logger_map;
+// extern LoggerPtr g_logger_comm;
+// extern LoggerPtr g_logger_loop;
+// extern LoggerPtr g_logger_solver;
+// extern LoggerPtr g_logger_viewer;
+}
 
 namespace cmd {
 

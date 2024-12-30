@@ -11,8 +11,7 @@
 #include "typedefs_backend.hpp"
 
 namespace cmd {
-static LoggerPtr g_logger_sys = SYLAR_LOG_NAME("CMD-VIEW");
-
+static LoggerPtr g_logger_viewer = SYLAR_LOG_NAME("Viewer");
 PangolinViewer::PangolinViewer(int w, int h, bool startRunThread)
     : m_w(w), m_h(h) {
   m_running = true;
@@ -153,7 +152,7 @@ void PangolinViewer::saveTrajectory(const std::string &filename) {
   if (!(stat(save_path.c_str(), &st) == 0 && S_ISDIR(st.st_mode))) {
     int result = mkdir(save_path.c_str(), 0777);
     if (result == -1) {
-      SYLAR_LOG_INFO(g_logger_sys) << "mkdir " << save_path << " failed";
+      SYLAR_LOG_INFO(g_logger_viewer) << "mkdir " << save_path << " failed";
       return;
     }
   }
@@ -163,7 +162,7 @@ void PangolinViewer::saveTrajectory(const std::string &filename) {
     std::ofstream file_stream(client_filename);
     if (!file_stream.is_open()) {
       std::cerr << "Failed to open the file: " << client_filename << std::endl;
-      SYLAR_LOG_ERROR(g_logger_sys)
+      SYLAR_LOG_ERROR(g_logger_viewer)
           << "Failed to open the file: " << client_filename;
       break;
     }
@@ -178,7 +177,7 @@ void PangolinViewer::saveTrajectory(const std::string &filename) {
       file_stream << std::endl;
     }
     file_stream.close();
-    SYLAR_LOG_INFO(g_logger_sys) << "save trajectory to " << client_filename;
+    SYLAR_LOG_INFO(g_logger_viewer) << "save trajectory to " << client_filename;
   }
 }
 

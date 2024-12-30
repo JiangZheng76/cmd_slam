@@ -3,7 +3,7 @@ project(cmd_backend)
 cmake_policy(SET CMP0048 NEW)
 
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Debug)
+  set(CMAKE_BUILD_TYPE RelWithDebInfo)
 endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native")

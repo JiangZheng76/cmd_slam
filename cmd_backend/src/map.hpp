@@ -39,7 +39,6 @@ class Framemanager {
   LoopframePtr getPrevLoopframe();
   LoopframePtr getLoopframeByKFId(int_t kf_id);
 
-  LoopframeVector updateInsertFrameWhileOptimize();
   void updateFramesFromCeres();
 
   void dump();
@@ -54,17 +53,20 @@ class Mapmanager {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   std::set<MapPtr> m_maps;
-  std::mutex m_mtx_lc_buf;  // from -> to
+  MutexType lc_buf_mutex_;  // from -> to
   LoopEdgeList m_lc_buf;    // from -> to
-  bool m_runing = true;
-  ThreadPtr m_thread;
+  ThreadPtr main_thread_;
+  ThreadPtr optimized_thread_;
 
   Mapmanager(PangolinViewerPtr viewer = nullptr);
   virtual ~Mapmanager();
 
   void Run();
+  void OptimizeRun();
 
-  bool addLoopframe(LoopframePtr lf);
+  bool addLoopframeWithLock(LoopframePtr lf);
+  void insertLoopframeToMap(LoopframePtr loopframe);
+  bool checkNewFrameBuf(LoopframeList &lfs);
   bool checkLoopclosureBuf();
   void checkOptimizeAndViewUpdate();
   void processLoopClosures();
@@ -72,8 +74,15 @@ class Mapmanager {
                        precision_t icp_score, precision_t sc_score);
 
  private:
+  MutexType mutex_;
+  MutexType newframe_buf_mutex_;
+  std::queue<LoopframePtr> newframe_buf_;
   std::unordered_map<int_t, FramemanagerPtr> fmgrs_;
+
+  bool optimize_running_ = true;
+  bool m_runing = true;
   PangolinViewerPtr viewer_;
   std::unique_ptr<PcmSolver> solver_;
+  std::unique_ptr<LoopHandler> handler_;
 };
 }  // namespace cmd

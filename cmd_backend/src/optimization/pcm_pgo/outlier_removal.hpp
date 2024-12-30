@@ -24,7 +24,13 @@ class OutlierRemoval {
       std::unordered_map<int_t, std::pair<LoopframeKey, TransMatrixType>>
           &last_client_key_pose,
       std::vector<bool> *need_optimized_map) = 0;
-
+      
+  virtual void classifyNewLoopframeToMap(
+      const LoopframeValue &new_loopframes,
+      std::unordered_map<int_t, std::pair<LoopframeKey, TransMatrixType>>
+          &last_client_key_pose,
+      std::vector<LoopframeValue> *output_values,
+      std::vector<FactorGraph> *output_nfg) {};
   virtual void saveData(std::string folder_path) {}
 
   void logOutput(const std::string &output_folder) {

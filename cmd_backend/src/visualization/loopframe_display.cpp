@@ -3,8 +3,6 @@
 
 namespace cmd
 {
-    static LoggerPtr g_logger_sys = SYLAR_LOG_NAME("system");
-
     LoopframeDisplay::LoopframeDisplay(LoopframePtr lf)
     {
         // TODO 替代 setKF 初始化整个 LoopframeDisplay

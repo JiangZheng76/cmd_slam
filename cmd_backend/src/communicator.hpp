@@ -6,7 +6,7 @@ namespace cmd {
 class Communicator : public CommunicatorBase {
  public:
   // EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  Communicator(int client_id, SocketPtr sock, LoopHandlerPtr loop_handler,
+  Communicator(int client_id, SocketPtr sock,
                MapmanagerPtr mapMgr);
 
   virtual void Run() override;
@@ -14,8 +14,6 @@ class Communicator : public CommunicatorBase {
   virtual void processSendMsgLoopframe() override;
 
  public:
-  // PangolinLoopViewerPtr m_viewer;
-  LoopHandlerPtr m_loophander;
   MapmanagerPtr m_mapmanager;
 };
 

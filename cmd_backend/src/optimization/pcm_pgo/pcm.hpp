@@ -23,8 +23,7 @@ class Pcm : public OutlierRemoval {
           &last_client_key_pose,
       std::vector<bool> *need_optimized_map) override;
 
-  void updateOdom(int map_id, const LoopEdge &factor,
-                  std::vector<LoopframeValue> &output_values);
+  void updateOdom(int client, const LoopEdge &factor);
 
   void parseAndIncrementAdjMatrix(
       FactorGraph &factors, std::vector<LoopframeValue> &output_value,
@@ -41,6 +40,8 @@ class Pcm : public OutlierRemoval {
 
   bool checkLoopConsistent(TransMatrixType &result, double &dist,
                            double &rot_dist);
+
+  TransMatrixType getCurrentKeyPose(LoopframeKey prev_key);
 
   void findInliersIncremental(
       const std::unordered_map<ObservationId, size_t> &num_new_loopclosures);
@@ -69,12 +70,11 @@ class Pcm : public OutlierRemoval {
       std::unordered_map<ObservationId, size_t> &num_new_loopclosures,
       std::vector<bool> &output_client);
 
-  void classifyNewLoopframeToMap(
-      const LoopframeValue &new_loopframes,
-      std::unordered_map<int_t, std::pair<LoopframeKey, TransMatrixType>>
-          &last_client_key_pose,
-      std::vector<LoopframeValue> *output_values,
-      std::vector<FactorGraph> *output_nfg);
+  int getKeyMap(LoopframeKey key);
+
+  void classifyNewLoopframeToMap(const LoopframeValue &new_loopframes,
+                                 std::vector<LoopframeValue> *output_values,
+                                 std::vector<FactorGraph> *output_nfg);
 
   void mergeCheckAndPreform(
       std::unordered_map<ObservationId, size_t> &new_num_loopclosures,

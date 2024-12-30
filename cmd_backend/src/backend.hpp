@@ -35,7 +35,6 @@ class CmdBackend {
   // Infrastructure
   std::vector<AgentHandlerPtr> m_agents;
   MapmanagerPtr m_mapmanager;
-  LoopHandlerPtr m_loop;
   PangolinViewerPtr m_viewer;
 
   int m_agent_next_id = 0;

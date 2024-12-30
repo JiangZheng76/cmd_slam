@@ -1,8 +1,7 @@
 #include "comm_base.hpp"
 
 namespace cmd {
-static LoggerPtr g_logger_sys = SYLAR_LOG_NAME("CMD-SLAM");
-
+static LoggerPtr g_logger_base = SYLAR_LOG_NAME("BaseComm");
 CommunicatorBase::CommunicatorBase() {}
 CommunicatorBase::CommunicatorBase(int client_id, SocketPtr sock)
     : SocketStream(sock, true), m_client_id(client_id), m_sock(sock) {}
@@ -43,7 +42,7 @@ static auto GetInAddr(struct sockaddr *sa) -> void * {
 /// @return
 SocketPtr CommunicatorBase::connectToServer(const char *node,
                                             std::string port) {
-  SYLAR_LOG_INFO(g_logger_sys)
+  SYLAR_LOG_INFO(g_logger_base)
       << "connnect to server [node:" << node << ", port:" << port << "]";
 
   std::vector<IPv4AddressPtr> res;
@@ -105,8 +104,8 @@ int CommunicatorBase::recvAll(unsigned int sz, std::vector<char> &buffer) {
     n_bytes = read(&buffer[tot_bytes], sz - tot_bytes);
     if (n_bytes <= 0) {
       if (n_bytes == 0) {
-        SYLAR_LOG_INFO(g_logger_sys)
-            << "------- selectserver: [client:" << m_client_id
+        SYLAR_LOG_INFO(g_logger_base)
+            << "\n------- selectserver: [client:" << m_client_id
             << "] hung up. -------\n"
             << "during time: " << InitAndGetDuringTime(false) << "s\n"
             << "send bytes: " << collectTotalSendByte(0) / 1024 << "KB\n"
@@ -118,11 +117,12 @@ int CommunicatorBase::recvAll(unsigned int sz, std::vector<char> &buffer) {
             << "recv rate: "
             << calculateRate(collectTotalRecvByte(0) / 1024,
                              InitAndGetDuringTime(false))
-            << "KB/s\n";
+            << "KB/s\n"
+            << "-------------------------------------------------";
       } else {
         perror("recv");
-        SYLAR_LOG_ERROR(g_logger_sys)
-            << "------- selectserver: [client:" << m_client_id
+        SYLAR_LOG_ERROR(g_logger_base)
+            << "\n------- selectserver: [client:" << m_client_id
             << "] socket ERROR! -------\n"
             << "during time: " << InitAndGetDuringTime(false) << "s\n"
             << "send bytes: " << collectTotalSendByte(0) / 1024 << "KB\n"
@@ -134,7 +134,8 @@ int CommunicatorBase::recvAll(unsigned int sz, std::vector<char> &buffer) {
             << "recv rate: "
             << calculateRate(collectTotalRecvByte(0) / 1024,
                              InitAndGetDuringTime(false))
-            << "KB/s\n";
+            << "KB/s\n"
+            << "-------------------------------------------------";
       }
       m_sock->dump(std::cout) << std::endl;
       return -1;
@@ -159,8 +160,8 @@ int CommunicatorBase::recvAll(unsigned int sz, MsgType &buffer) {
     n_bytes = read(&buffer[tot_bytes], sz - tot_bytes);
     if (n_bytes <= 0) {
       if (n_bytes == 0) {
-        SYLAR_LOG_INFO(g_logger_sys)
-            << "------- selectserver: [client:" << m_client_id
+        SYLAR_LOG_INFO(g_logger_base)
+            << "\n------- selectserver: [client:" << m_client_id
             << "] hung up. -------\n"
             << "during time: " << InitAndGetDuringTime(false) << "s\n"
             << "send bytes: " << collectTotalSendByte(0) / 1024 << "KB\n"
@@ -172,11 +173,12 @@ int CommunicatorBase::recvAll(unsigned int sz, MsgType &buffer) {
             << "recv rate: "
             << calculateRate(collectTotalRecvByte(0) / 1024,
                              InitAndGetDuringTime(false))
-            << "KB/s\n";
+            << "KB/s\n"
+            << "-------------------------------------------------";
       } else {
         perror("recv");
-        SYLAR_LOG_ERROR(g_logger_sys)
-            << "------- selectserver: [client:" << m_client_id
+        SYLAR_LOG_ERROR(g_logger_base)
+            << "\n------- selectserver: [client:" << m_client_id
             << "] socket ERROR! -------\n"
             << "during time: " << InitAndGetDuringTime(false) << "s\n"
             << "send bytes: " << collectTotalSendByte(0) / 1024 << "KB\n"
@@ -188,7 +190,8 @@ int CommunicatorBase::recvAll(unsigned int sz, MsgType &buffer) {
             << "recv rate: "
             << calculateRate(collectTotalRecvByte(0) / 1024,
                              InitAndGetDuringTime(false))
-            << "KB/s\n";
+            << "KB/s\n"
+            << "-------------------------------------------------";
       }
       m_sock->dump(std::cout) << std::endl;
       return -1;
@@ -200,7 +203,7 @@ int CommunicatorBase::recvAll(unsigned int sz, MsgType &buffer) {
 }
 /// @brief 接收数据的线程
 void CommunicatorBase::recvMsg() {
-  SYLAR_LOG_INFO(g_logger_sys) << "--> Start Recv Thread";
+  SYLAR_LOG_INFO(g_logger_base) << "--> Start Recv Thread";
   size_t total_msg = 0;
   m_msgtype_container.resize(ContainerSize * 5);
   size_t type_size = sizeof(m_msgtype_container[0]) * ContainerSize * 5;
@@ -208,14 +211,14 @@ void CommunicatorBase::recvMsg() {
     // ？？？ 不是很懂，一次性收了这么多不会污染后面的 msgloopframe
     // 么？（发送的时候也是一次性发送 10 个 msgtype，不够补 0）
     if (recvAll(type_size, m_msgtype_container)) {
-      SYLAR_LOG_INFO(g_logger_sys) << "--> Exit Recv Thread";
+      SYLAR_LOG_INFO(g_logger_base) << "--> Exit Recv Thread";
       setFinish();
       break;
     }
     // 大小为 1 ，接受到 client id
     if (m_msgtype_container[0] == 1) {
       m_client_id = m_msgtype_container[1];
-      SYLAR_LOG_INFO(g_logger_sys) << "--> Set Client ID: " << m_client_id;
+      SYLAR_LOG_INFO(g_logger_base) << "--> Set Client ID: " << m_client_id;
       m_msgtype_container[0] = 0;  // 长度为 0 ，后面不再处理
     }
 
@@ -227,14 +230,14 @@ void CommunicatorBase::recvMsg() {
     std::unique_lock<std::mutex> lk(m_mtx_recv_buf);
     m_recv_buf.clear();  // 每一次接收前都要重置
     if (recvAll(total_msg, m_recv_buf)) {
-      SYLAR_LOG_INFO(g_logger_sys) << "----> Exit Recv Thread\n";
+      SYLAR_LOG_INFO(g_logger_base) << "----> Exit Recv Thread\n";
       setFinish();
       break;
     }
     writeToBuffer();
 
     if (shallFinish()) {
-      SYLAR_LOG_INFO(g_logger_sys) << "----> Exit Recv Thread\n";
+      SYLAR_LOG_INFO(g_logger_base) << "----> Exit Recv Thread\n";
       break;
     }
   }
@@ -287,7 +290,7 @@ bool CommunicatorBase::checkBufferAndPop() {
 size_t CommunicatorBase::sendMsgContainer(MessageContainer &msg) {
   size_t info_bytes = sendAll(msg.msg_info);
   size_t data_bytes = sendAll(msg.msg_data);
-  // SYLAR_LOG_DEBUG(g_logger_sys) << "sendMsgContainer() send data_bytes: "
+  // SYLAR_LOG_DEBUG(g_logger_base) << "sendMsgContainer() send data_bytes: "
   //                               << data_bytes << " bytes and info_bytes "
   //                               << info_bytes << " bytes";
   return data_bytes;
@@ -328,7 +331,7 @@ void CommunicatorBase::processBufferOut() {
     size_t rt = sendMsgContainer(*mcts.front());
     mcts.pop_front();
     if (!rt) {
-      SYLAR_LOG_WARN(g_logger_sys) << "send loopframe msg is empty!";
+      SYLAR_LOG_WARN(g_logger_base) << "send loopframe msg is empty!";
     }
   }
 }
@@ -345,7 +348,7 @@ void CommunicatorBase::processBufferIn() {
       size_t len = m_buf_recv_data.front().size();
       tmp_data.write(&m_buf_recv_data.front()[0], len);
       m_buf_recv_data.pop_front();
-      // SYLAR_LOG_DEBUG(g_logger_sys) << "recv " << len << " bytes loopframe
+      // SYLAR_LOG_DEBUG(g_logger_base) << "recv " << len << " bytes loopframe
       // msg.";
 
       // 获取 msginfo
@@ -363,9 +366,9 @@ void CommunicatorBase::processBufferIn() {
         iarchive(*msg);
         // 保证 id 顺序增长
         m_buf_msg_in.push_back(msg);
-        // SYLAR_LOG_DEBUG(g_logger_sys) << "接收新 message\n"<< msg->dump();
+        // SYLAR_LOG_DEBUG(g_logger_base) << "接收新 message\n"<< msg->dump();
       } else {
-        SYLAR_LOG_ERROR(g_logger_sys) << "新数据类型错误 type:" << tmp_info[4];
+        SYLAR_LOG_ERROR(g_logger_base) << "新数据类型错误 type:" << tmp_info[4];
         SYLAR_ASSERT(false);
       }
     } else if (tmp_info[1] == 1) {
@@ -373,14 +376,14 @@ void CommunicatorBase::processBufferIn() {
       if (tmp_info[4] == 0) {
         // loopframe
         iarchive(*msg);
-        SYLAR_LOG_INFO(g_logger_sys) << "接收到更新帧 \n" << msg->dump();
+        SYLAR_LOG_INFO(g_logger_base) << "接收到更新帧 \n" << msg->dump();
         // TODO 编写更新帧逻辑
       } else {
-        SYLAR_LOG_ERROR(g_logger_sys) << "新数据类型错误 type:" << tmp_info[4];
+        SYLAR_LOG_ERROR(g_logger_base) << "新数据类型错误 type:" << tmp_info[4];
         SYLAR_ASSERT(false);
       }
     } else {
-      SYLAR_LOG_ERROR(g_logger_sys) << "SentOnce 类型错误:" << tmp_info[1];
+      SYLAR_LOG_ERROR(g_logger_base) << "SentOnce 类型错误:" << tmp_info[1];
       SYLAR_ASSERT(false);
     }
     cnt++;
@@ -388,7 +391,7 @@ void CommunicatorBase::processBufferIn() {
 }
 
 void CommunicatorBase::showResult() {
-  SYLAR_LOG_INFO(g_logger_sys) << "CommunicatorBase::showResult() 未实现.";
+  SYLAR_LOG_INFO(g_logger_base) << "CommunicatorBase::showResult() 未实现.";
 }
 
 }  // namespace cmd

@@ -5,9 +5,9 @@
 namespace cmd {
 
 AgentHandler::AgentHandler(size_t client_id, SocketPtr sock,
-                           MapmanagerPtr mapMgr, LoopHandlerPtr loop)
+                           MapmanagerPtr mapMgr)
     : m_client_id(client_id), m_mapMgr(mapMgr) {
-  m_comm.reset(new Communicator(client_id, sock, loop, mapMgr));
+  m_comm.reset(new Communicator(client_id, sock, mapMgr));
   // 启动 comm
   m_comm->action();
 }

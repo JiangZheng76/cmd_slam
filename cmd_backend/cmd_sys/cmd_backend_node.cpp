@@ -4,16 +4,16 @@
 
 using namespace cmd;
 
-LoggerPtr g_logger = SYLAR_LOG_NAME("CMD-SLAM");
+
 
 int main(int argc, char* argv[]){
-    
-    SYLAR_LOG_INFO(g_logger) << "--> START CMD-SLAM";
+    static LoggerPtr g_logger_backend = SYLAR_LOG_NAME("Backend");
+    SYLAR_LOG_INFO(g_logger_backend) << "--> START CMD-SLAM";
     ros::init(argc, argv, "CODSV_BackEnd");
     // ros::NodeHandle nh("~");
     CmdBackendPtr backend(new CmdBackend());
     ros::spin();
-    SYLAR_LOG_INFO(g_logger) << "<-- END CMD-SLAM";
+    SYLAR_LOG_INFO(g_logger_backend) << "<-- END CMD-SLAM";
     return 0;
     
 }

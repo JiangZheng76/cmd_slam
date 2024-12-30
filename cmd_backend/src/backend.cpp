@@ -6,23 +6,19 @@
 #include "visualization/pangolin_viewer.hpp"
 
 namespace cmd {
-
-static LoggerPtr g_logger_sys = SYLAR_LOG_NAME("CMD-SLAM");
-
+static LoggerPtr g_logger_backend = SYLAR_LOG_NAME("Backend");
 CmdBackend::CmdBackend() {
   m_viewer = std::make_shared<PangolinViewer>(VIEWER_WIDTH, VIEWER_HIGH);
   m_mapmanager = std::make_shared<Mapmanager>(m_viewer);
-  m_loop = std::make_shared<LoopHandler>(LIDAR_RANGE, SCANCONTEXT_THRES,
-                                         m_mapmanager);
   // 开启等待任务线程
   m_backend_thread.reset(
       new Thread(std::bind(&CmdBackend::Run, this), "backend thread."));
 }
 void CmdBackend::Run() {
-  SYLAR_LOG_INFO(g_logger_sys) << "--> START cmd-slam backend.";
+  SYLAR_LOG_INFO(g_logger_backend) << "--> START cmd-slam backend.";
   acceptAgent();
   connectSocket();
-  SYLAR_LOG_INFO(g_logger_sys) << "<-- END cmd-slam backend.";
+  SYLAR_LOG_INFO(g_logger_backend) << "<-- END cmd-slam backend.";
 }
 void CmdBackend::acceptAgent() {
   std::stringstream ss;
@@ -41,7 +37,7 @@ void CmdBackend::acceptAgent() {
   m_sock->listen();
   std::stringstream ss_sock;
   m_sock->dump(ss_sock);
-  SYLAR_LOG_INFO(g_logger_sys) << "创建监听 socket " << ss_sock.str();
+  SYLAR_LOG_INFO(g_logger_backend) << "创建监听 socket " << ss_sock.str();
 }
 int CmdBackend::get_counter() {
   static int client_id = 0;
@@ -52,15 +48,15 @@ void CmdBackend::connectSocket() {
   while (true) {
     SocketPtr comm_sock = m_sock->accept();
     if (!comm_sock) {
-      SYLAR_LOG_ERROR(g_logger_sys) << "accept socket error.";
+      SYLAR_LOG_ERROR(g_logger_backend) << "accept socket error.";
       // comm_sock->dump(std::cout);
       continue;
     }
     AgentHandlerPtr agent(
-        new AgentHandler(get_counter(), comm_sock, m_mapmanager, m_loop));
+        new AgentHandler(get_counter(), comm_sock, m_mapmanager));
     m_agents.push_back(agent);
 
-    SYLAR_LOG_INFO(g_logger_sys)
+    SYLAR_LOG_INFO(g_logger_backend)
         << "--> ACCEPT NEW Agent_" << agent->m_client_id;
   }
 }

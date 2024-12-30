@@ -1,7 +1,6 @@
 #include "msg_loopframe.hpp"
 
 namespace cmd {
-static LoggerPtr g_logger_sys = SYLAR_LOG_NAME("CMD_SLAM");
 MsgLoopframe::MsgLoopframe() : m_is_update_msg(false), m_msgtype(5, 0) {}
 MsgLoopframe::MsgLoopframe(MsgType msgtype)
     : m_is_update_msg(false), m_msgtype(msgtype), m_ref_cf(0) {
@@ -9,7 +8,7 @@ MsgLoopframe::MsgLoopframe(MsgType msgtype)
                 "msgtype 长度出错 m_msgtype length :" + m_msgtype.size());
 }
 MsgLoopframe::~MsgLoopframe() {
-  // SYLAR_LOG_DEBUG(g_logger_sys) << dump();
+  // SYLAR_LOG_DEBUG(g_logger_comm) << dump();
 }
 void MsgLoopframe::setMsgType(int msg_size) {
   m_msgtype[0] = msg_size;

@@ -5,11 +5,10 @@
 #include "map.hpp"
 
 namespace cmd {
-static LoggerPtr g_logger_sys = SYLAR_LOG_NAME("CMD-SLAM");
+static LoggerPtr g_logger_comm = SYLAR_LOG_NAME("Comm");
 Communicator::Communicator(int client_id, SocketPtr sock,
-                           LoopHandlerPtr loop_handler, MapmanagerPtr mapMgr)
+                           MapmanagerPtr mapMgr)
     : CommunicatorBase(client_id, sock),
-      m_loophander(loop_handler),
       m_mapmanager(mapMgr) {
   MessageContainer out_container;
   // 构建返回的设置client_id的msg
@@ -21,14 +20,14 @@ Communicator::Communicator(int client_id, SocketPtr sock,
   }
 
   sendMsgContainer(out_container);
-  SYLAR_LOG_INFO(g_logger_sys) << "Pass new ID " << m_client_id << " to client";
+  SYLAR_LOG_INFO(g_logger_comm) << "Pass new ID " << m_client_id << " to client";
 }
 
 void Communicator::Run() {
   Thread thread(std::bind(&Communicator::recvMsg, this), "recv msg thread");
   thread.detach();
 
-  SYLAR_LOG_INFO(g_logger_sys)
+  SYLAR_LOG_INFO(g_logger_comm)
       << "Agent_" << m_client_id << " START communicator.";
   // 修改验证通信
   while (true) {
@@ -54,7 +53,7 @@ void Communicator::Run() {
   std::unique_lock<std::mutex> lock(m_mtx_finish);
   m_is_finished = true;
 
-  SYLAR_LOG_INFO(g_logger_sys)
+  SYLAR_LOG_INFO(g_logger_comm)
       << "Agent_" << m_client_id << " End communicator.";
 }
 /// @brief 将接收到的 msg 转化成 lf，放入到待处理的队列中
@@ -68,8 +67,7 @@ void Communicator::processRecvMsgLoopframe() {
     if (!msg->m_is_update_msg) {  // 新帧
       LoopframePtr lf(new Loopframe(msg));
       // 是最新的帧
-      m_mapmanager->addLoopframe(lf);
-      m_loophander->pushLoopframe2Buf(lf);
+      m_mapmanager->insertLoopframeToMap(lf);
     }
     cnt++;
   }
