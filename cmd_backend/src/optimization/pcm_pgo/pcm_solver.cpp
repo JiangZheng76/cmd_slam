@@ -135,7 +135,7 @@ bool PcmSolver::checkIsOptimized(std::vector<cmd::LoopframeValue> &values) {
 
 bool PcmSolver::removeOutlierAndOptimize(
     FactorGraph &factors, LoopframeValue &values,
-    std::vector<bool>& need_optimize_idx,
+    std::vector<bool> &need_optimize_idx,
     std::vector<cmd::Sim3LoopframeValue> &optimized_values) {
   bool do_optimize;
 
@@ -278,7 +278,7 @@ void PcmSolver::ceresSim3Optimize(std::vector<FactorGraph> &full_fgs,
     ceres::Solver::Options solver_options;
     solver_options.max_num_iterations = OPT_ITER;
     solver_options.minimizer_progress_to_stdout = false;  // 是否输出迭代信息
-    solver_options.function_tolerance = 1e-16;           // 收敛的阈值
+    solver_options.function_tolerance = 1e-16;            // 收敛的阈值
     solver_options.linear_solver_type = ceres::SPARSE_SCHUR;
 
     ceres::Solver::Summary summary;
@@ -317,35 +317,5 @@ bool PcmSolver::checkNeedOptimize() {
   }
   return false;
 }
-/// @brief 优化线程
-// void PcmSolver::Run() {
-//   SYLAR_LOG_INFO(g_logger_solver) << "--> PcmSolver START";
-//   while (solver_running_) {
-//     FactorGraph new_factors;
-//     LoopframeValue new_vals;  // [key,twc]
-//     LoopEdgeVector les;
-//     {
-//       MutexType::Lock lk(mutex_);
-//       les.reserve(factors_buf_.size());
-//       while (!factors_buf_.empty()) {
-//         auto le = factors_buf_.front();
-//         factors_buf_.pop();
-//         les.push_back(le);
-//       }
-//     }
-//     if (les.size() != 0) {
-//       convertFactorAndValue(les, new_factors, new_vals);
-//       if (new_factors.size() >= 1 &&
-//           new_factors[0].m_type == EdgeType::LOOPCLOSURE) {
-//         SYLAR_LOG_DEBUG(g_logger_solver)
-//             << "PcmSolver process " << new_factors.size() << " factors.";
-//       }
-//     }
-//     removeOutlierAndOptimize(new_factors, new_vals);
-//     usleep(500);
-//   }
-//   SYLAR_LOG_INFO(g_logger_solver) << "<-- pcm solver optimize thread is
-//   end.";
-// }
 void PcmSolver::Stop() { solver_running_ = false; }
 }  // namespace cmd

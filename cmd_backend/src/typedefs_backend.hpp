@@ -17,11 +17,11 @@
 #define SCANCONTEXT_THRES 0.40
 
 // icp
-#define ICP_ITERA_TIME 25
+#define ICP_ITERA_TIME 50
 #define ICP_TRANS_EPSILON 0.01
 #define ICP_EUC_EPSILON 0.001
-// #define ICP_THRES 1.5 
-#define ICP_THRES 1.6 
+#define ICP_THRES 1.5 
+// #define ICP_THRES 1.6 
 
 // optimization
 #define OPT_ROBUST_LOSS 0.5

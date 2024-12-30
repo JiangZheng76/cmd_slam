@@ -38,18 +38,12 @@ inline bool icp(const Point3Vector &pts_source, const Point3Vector &pts_target,
       pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>(
           transformPoints(pts_source, tfm_target_source)));
   pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
-  icp.setMaximumIterations(5);
-  icp.setTransformationEpsilon(0.01);
   icp.setMaxCorrespondenceDistance(2);
   icp.setRANSACOutlierRejectionThreshold(0.5);
 
-  // icp.setMaximumIterations(ICP_ITERA_TIME);
-  // icp.setTransformationEpsilon(ICP_TRANS_EPSILON); // orginal 0.01
-  // icp.setEuclideanFitnessEpsilon(ICP_EUC_EPSILON);
-  // // 设置最大匹配距离阈值
-  // icp.setMaxCorrespondenceDistance(2);
-
-  // icp.setRANSACOutlierRejectionThreshold(0.3);
+  icp.setMaximumIterations(ICP_ITERA_TIME);
+  icp.setTransformationEpsilon(ICP_TRANS_EPSILON); // orginal 0.01
+  icp.setEuclideanFitnessEpsilon(ICP_EUC_EPSILON);
 
   icp.setInputSource(pc_target_source_ptr);
   icp.setInputTarget(pc_target_ptr);

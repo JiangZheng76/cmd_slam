@@ -2,7 +2,7 @@
 
 #include "sophus/sim3.hpp"
 
-#define POSE_R_WEIGHT 100
+#define POSE_R_WEIGHT 1
 
 namespace cmd {
 Point2::Point2(const MsgPoint &msg)
@@ -26,8 +26,8 @@ LoopEdge::LoopEdge(LoopframePtr from, LoopframePtr to,
   m_info.setIdentity();
   m_info *= (1.0 / dso_error);
   m_info.topLeftCorner<3, 3>() *= scale_error > 0 ? (1.0 / scale_error) : 1e-9;
-  // 由于dso对于旋转的估计比位移准确，所以将尺度控制权重先设置为与位移相同
-  m_info.bottomRightCorner<3, 3>() *= POSE_R_WEIGHT;
+  // 由于dso对于旋转的估计比位移准确=
+  m_info.bottomRightCorner<4, 4>() *= POSE_R_WEIGHT;
 }
 
 Loopframe::Loopframe(MsgLoopframePtr msg, bool first_loopframe)

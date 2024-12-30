@@ -89,7 +89,9 @@ class LoopframeValue : public std::map<LoopframeKey, TransMatrixType> {
 class Sim3LoopframeValue : public std::unordered_map<LoopframeKey, VecSim3> {
  public:
   static Sophus::Sim3d ToCeresTcwSim3(const TransMatrixType &trans) {
-    return Sophus::Sim3d(trans.matrix().inverse());
+    Sophus::Sim3d sim3(trans.matrix().inverse());
+    sim3.setScale(1.0);
+    return sim3;
   }
   static TransMatrixType ToTwcSE3(Sophus::Sim3d &sim3) {
     return TransMatrixType(ToOrthogonalTrans(sim3.matrix().inverse()));

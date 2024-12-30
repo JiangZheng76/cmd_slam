@@ -329,11 +329,13 @@ void Pcm::extractNeedOptimizeMap(
 void Pcm::buildGraphToOptimize(std::vector<FactorGraph> &output_nfg) {
   int robot_num = nfg_odom_.size();
   output_nfg.resize(robot_num);
+  // odom 约束边
   for (int i = 0; i < robot_num; i++) {
     output_nfg[i] = nfg_odom_[i];
   }
   std::unordered_map<ObservationId, Measurements>::iterator it =
       loop_closures_.begin();
+  // loopclosure 约束边
   while (it != loop_closures_.end()) {
     auto client_a = (*it).first.client_a;
     auto client_b = (*it).first.client_b;
@@ -563,10 +565,16 @@ void Pcm::findInliersIncremental(
           auto from =
               loop_closures_[robot_pair].factors[inliers_idx[i]].m_from_lf;
           auto to = loop_closures_[robot_pair].factors[inliers_idx[i]].m_to_lf;
-          ss << "\n"
-             << inliers_idx[i] << "[client:" << from->m_client_id
+          ss << inliers_idx[i] << " [client:" << from->m_client_id
              << ",id:" << from->m_lf_id << "]->[client:" << to->m_client_id
-             << ",id:" << to->m_lf_id << "]";
+             << ",id:" << to->m_lf_id << "]"
+             << ",trans_dist:"
+             << loop_closures_[robot_pair].dist_matrix(inliers_idx[0],
+                                                       inliers_idx[i])
+             << ",rot_dist:"
+             << loop_closures_[robot_pair].rot_matrix(inliers_idx[0],
+                                                      inliers_idx[i])
+             << "\n";
         }
       }
     } else {
