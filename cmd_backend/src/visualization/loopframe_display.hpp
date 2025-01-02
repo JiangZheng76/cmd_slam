@@ -24,6 +24,7 @@ class LoopframeDisplay {
 
   void refreshPC();
   void drawPC(float pointSize);
+  void drawPose(float poseSize);
 
   void setFromLF(LoopframePtr lf);
   void initColor(std::vector<float> color);

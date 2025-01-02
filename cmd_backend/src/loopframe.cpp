@@ -28,6 +28,9 @@ LoopEdge::LoopEdge(LoopframePtr from, LoopframePtr to,
   m_info.topLeftCorner<3, 3>() *= scale_error > 0 ? (1.0 / scale_error) : 1e-9;
   // 由于dso对于旋转的估计比位移准确=
   m_info.bottomRightCorner<4, 4>() *= POSE_R_WEIGHT;
+
+  static int id = 0;
+  id_ = id++;
 }
 
 Loopframe::Loopframe(MsgLoopframePtr msg, bool first_loopframe)

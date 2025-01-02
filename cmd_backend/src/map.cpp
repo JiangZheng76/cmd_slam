@@ -172,8 +172,8 @@ void Mapmanager::OptimizeRun() {
     if (new_factors.size() != 0) {
       std::vector<bool> need_optimize_idx;
       std::vector<cmd::Sim3LoopframeValue> optimized_values;
-      MutexType::Lock lk(mutex_);
       // 执行优化操作
+      MutexType::Lock lk(mutex_);
       if (solver_->removeOutlierAndOptimize(
               new_factors, new_vals, need_optimize_idx, optimized_values)) {
         // 更新数据
@@ -188,11 +188,12 @@ void Mapmanager::OptimizeRun() {
 }
 void Mapmanager::checkOptimizeAndViewUpdate() {
   std::vector<LoopframeValue> full_values;
-  std::vector<LoopframePtr> update_loopframes;
+  std::vector<FactorGraph> full_fgs;
+  std::list<LoopframePtr> update_loopframes;
+  FactorGraph update_loopclosures;
   auto &frame_mgrs = fmgrs_;
-  if (solver_->checkIsOptimized(full_values)) {
+  if (solver_->checkIsOptimized(full_values, full_fgs)) {
     // 获取所有的
-    update_loopframes.reserve(full_values.front().size() * 10);
     int map_id = 0;
     for (const auto &values : full_values) {
       for (const auto &[key, pose] : values) {
@@ -214,11 +215,19 @@ void Mapmanager::checkOptimizeAndViewUpdate() {
         update_loopframes.push_back(lf);
       }
     }
+    update_loopclosures.reserve(full_fgs.size() * 100);
+    for (const auto &fgs : full_fgs) {
+      for (const auto &factor : fgs) {
+        if (factor.m_type == LOOPCLOSURE) {
+          update_loopclosures.push_back(factor);
+        }
+      }
+    }
     if (debug()) {
       SYLAR_LOG_DEBUG(g_logger_map)
           << "update loopframes size:" << update_loopframes.size();
     }
-    viewer_->showLoopframes(update_loopframes);
+    viewer_->show(update_loopframes, update_loopclosures);
   } else {
     if (debug()) {
       SYLAR_LOG_WARN(g_logger_map) << "pcm solver is not optimized";

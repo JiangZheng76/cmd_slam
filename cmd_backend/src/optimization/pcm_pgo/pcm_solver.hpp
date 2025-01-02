@@ -49,7 +49,7 @@ class PcmSolver {
       const std::vector<bool>& need_optimize_idx,
       const std::vector<Sim3LoopframeValue>& sim3_values);
 
-  bool checkIsOptimized(std::vector<cmd::LoopframeValue>& values);
+  bool checkIsOptimized(std::vector<LoopframeValue>& values,std::vector<FactorGraph>& fgs);
 
   bool checkFactorBufferWithLock(LoopEdgeVector& les);
 

@@ -38,6 +38,7 @@ enum EdgeType {
 };
 struct LoopEdge {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  int id_;
   // 持有该 edge 的 lf 为入度端
   LoopframePtr m_from_lf;  // ref ｜ query
   LoopframePtr m_to_lf;    // cur ｜ match
@@ -50,6 +51,7 @@ struct LoopEdge {
 
   EdgeType m_type;
 
+  LoopEdge(){};
   LoopEdge(LoopframePtr from, LoopframePtr to, const TransMatrixType &t_tf,
            precision_t icp_error, precision_t sc_error, EdgeType type);
 };

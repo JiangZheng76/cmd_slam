@@ -12,6 +12,20 @@
 
 namespace cmd {
 static LoggerPtr g_logger_viewer = SYLAR_LOG_NAME("Viewer");
+
+FactorDisplay::FactorDisplay(const LoopEdge &factor) {
+  auto from = factor.m_from_lf;
+  auto to = factor.m_to_lf;
+  from_wc = from->m_twc;
+  to_wc = to->m_twc;
+}
+FactorGraphDisplay::FactorGraphDisplay(const FactorGraph &fg) {
+  clear();
+  for (const auto &factor : fg) {
+    FactorDisplay factor_display(factor);
+    push_back(factor_display);
+  }
+}
 PangolinViewer::PangolinViewer(int w, int h, bool startRunThread)
     : m_w(w), m_h(h) {
   m_running = true;
@@ -31,34 +45,74 @@ PangolinViewer::~PangolinViewer() {
   m_view_thread->join();
 }
 void PangolinViewer::showLoopframes(LoopframePtr lf) {
-  std::unique_lock<std::mutex> lk(m_update_loopframe_buf_mtx);
-  m_update_loopframe_buf.push(lf);
+  std::unique_lock<std::mutex> lk(update_mtx_);
+  update_loopframe_buf_.push(lf);
 }
-void PangolinViewer::showLoopframes(const LoopframeVector &lfs) {
-  std::unique_lock<std::mutex> lk(m_update_loopframe_buf_mtx);
-  for (auto lf : lfs) {
-    m_update_loopframe_buf.push(lf);
+void PangolinViewer::showLoopClosures(LoopEdge &le) {
+  std::unique_lock<std::mutex> lk(update_mtx_);
+  if (update_fg_buf_.empty()) {
+    update_fg_buf_.emplace_back();
   }
+  // 插入到最后一个中
+  auto fg = update_fg_buf_.back();
+  fg.push_back(le);
+}
+void PangolinViewer::show(const LoopframeList &lfs,
+                          const FactorGraph &factors) {
+  std::unique_lock<std::mutex> lk(update_mtx_);
+  for (auto lf : lfs) {
+    update_loopframe_buf_.push(lf);
+  }
+  update_fg_buf_.push_back(factors);
+}
+bool PangolinViewer::checkLoopframeBuf() {
+  return !update_loopframe_buf_.empty();
+}
+bool PangolinViewer::checkFactorGraphBuf(FactorGraphDisplay &fg) {
+  if (!update_fg_buf_.empty()) {
+    fg = update_fg_buf_.front();
+    update_fg_buf_.pop_front();
+    return true;
+  }
+  return false;
+}
+AgentDisplayPtr PangolinViewer::getAgentsDisplay(int client){
+  AgentDisplayPtr agent_display = nullptr;
+  if (m_agent_displays.find(client) == m_agent_displays.end()) {
+    std::vector<float> colors;
+    getColors(colors);
+    agent_display.reset(new AgentDisplay(client, colors));
+    m_agent_displays.insert(std::make_pair(client, agent_display));
+  } else {
+    agent_display = m_agent_displays[client];
+  }
+  return agent_display;
 }
 void PangolinViewer::updateDisplay() {
-  std::unique_lock<std::mutex> lk(m_update_loopframe_buf_mtx);
-  while (!m_update_loopframe_buf.empty()) {
-    LoopframePtr lf = m_update_loopframe_buf.front();
-    m_update_loopframe_buf.pop();
-
-    auto client_id = lf->m_client_id;
-    AgentDisplayPtr agent_display = nullptr;
-    if (m_agent_displays.find(client_id) == m_agent_displays.end()) {
-      std::vector<float> colors;
-      getColors(colors);
-      agent_display.reset(new AgentDisplay(client_id, colors));
-      m_agent_displays.insert(std::make_pair(client_id, agent_display));
-    } else {
-      agent_display = m_agent_displays[client_id];
-    }
-
-    agent_display->addLoopframe(lf);
+  std::unique_lock<std::mutex> lk(update_mtx_);
+  // 更新帧信息
+  LoopframePtr lf;
+  while (checkLoopframeBuf()) {
+    lf = update_loopframe_buf_.front();
+    update_loopframe_buf_.pop();
+    auto client = lf->m_client_id;
+    AgentDisplayPtr agent = getAgentsDisplay(client);
+    agent->addLoopframe(lf);
   }
+  // 更新回环约束边
+  checkFactorGraphBuf(loopclosure_factors_);
+}
+void PangolinViewer::drawLoopClosureFactor() {
+  glColor3f(1.0, 0, 0);
+  glLineWidth(2);
+  glBegin(GL_LINES);
+  for (auto &factor : loopclosure_factors_) {
+    Point3 from_trans = factor.from_wc.translation();
+    Point3 to_trans = factor.to_wc.translation();
+    glVertex3d(from_trans[0], from_trans[1], from_trans[2]);
+    glVertex3d(to_trans[0], to_trans[1], to_trans[2]);
+  }
+  glEnd();
 }
 void PangolinViewer::getColors(std::vector<float> &color) {
   static int s_color_id = 0;
@@ -114,7 +168,7 @@ void PangolinViewer::Run() {
   while (!pangolin::ShouldQuit() && m_running) {
     // Clear entire screen
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
     updateDisplay();
 
@@ -127,14 +181,15 @@ void PangolinViewer::Run() {
       auto agent_display = p.second;
       agent_display->drawLoopFrames();
     }
+    // 主界面画出回环边
+    drawLoopClosureFactor();
 
-    Visualization_lidar_display.Activate(Visualization_lidar_camera);
-    // boost::unique_lock<boost::mutex> lklidar(model_lidar_mutex_);
-    for (auto &p : m_agent_displays) {
-      auto agent_display = p.second;
-      agent_display->drawLidar();
-    }
-
+    // 画雷达点云图
+    // Visualization_lidar_display.Activate(Visualization_lidar_camera);
+    // for (auto &p : m_agent_displays) {
+    //   auto agent_display = p.second;
+    //   agent_display->drawLidar();
+    // }
     // 画完递交画面
     pangolin::FinishFrame();
   }

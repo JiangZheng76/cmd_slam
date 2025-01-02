@@ -22,7 +22,8 @@ void AgentDisplay::drawLoopFrames() {
   std::unique_lock<std::mutex> lk(m_mtx_display);
   for (auto lf_display : m_list_displays) {
     lf_display->refreshPC();
-    lf_display->drawPC(1);
+    lf_display->drawPC(1.0);
+    lf_display->drawPose(0.4);
   }
   drawConstraints();
 }
@@ -31,7 +32,7 @@ void AgentDisplay::drawConstraints() {
   glLineWidth(3);
 
   glBegin(GL_LINE_STRIP);
-  for (auto &lf_display : m_list_displays) {
+  for (auto& lf_display : m_list_displays) {
     Point3 translatioin = lf_display->m_Twc.translation();
     glVertex3d(translatioin[0], translatioin[1], translatioin[2]);
   }

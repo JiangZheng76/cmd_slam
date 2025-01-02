@@ -123,10 +123,12 @@ void PcmSolver::insertLoopEdgeAndUpdate(const LoopEdgeVector &les,
 void PcmSolver::getAllValueToUpdateMap(LoopframeValue &vals) {
   // TODO 获取所有的优化结果
 }
-bool PcmSolver::checkIsOptimized(std::vector<cmd::LoopframeValue> &values) {
+bool PcmSolver::checkIsOptimized(std::vector<cmd::LoopframeValue> &values,
+                                 std::vector<FactorGraph> &fgs) {
   MutexType::Lock lk(mutex_);
   if (is_optimized_) {
     values = values_;
+    fgs = nfg_;
     is_optimized_ = false;
     return true;
   }
@@ -148,7 +150,7 @@ bool PcmSolver::removeOutlierAndOptimize(
 
   // 唤醒优化
   if (do_optimize) {
-    SYLAR_LOG_INFO(g_logger_solver) << "--> RPGO" << "\e[1;31m START \e[0m";
+    SYLAR_LOG_INFO(g_logger_solver) << "--> RPGO" << "\e[1;32m START \e[0m";
     optimize(need_optimize_idx, optimized_values);
     SYLAR_LOG_INFO(g_logger_solver) << "<-- RPGO" << "\e[1;33m END \e[0m";
   }

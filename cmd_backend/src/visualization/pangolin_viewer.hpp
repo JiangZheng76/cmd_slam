@@ -7,6 +7,7 @@
 
 #include "agent_display.hpp"
 #include "loopframe_display.hpp"
+#include "optimization/pcm_pgo/utils/TypeUtils.h"
 
 namespace cmd {
 
@@ -24,7 +25,16 @@ struct VisColorRGB {
   const float mfR, mfG, mfB;
   const u_int8_t mu8R, mu8G, mu8B;
 };
-
+struct FactorDisplay {
+  TransMatrixType from_wc;
+  TransMatrixType to_wc;
+  FactorDisplay(const LoopEdge& factor);
+};
+class FactorGraphDisplay : public std::vector<FactorDisplay> {
+ public:
+  FactorGraphDisplay(const FactorGraph& fg);
+  FactorGraphDisplay(){}
+};
 class PangolinViewer {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -36,11 +46,18 @@ class PangolinViewer {
   // ==================== Output3DWrapper Functionality ======================
 
   void showLoopframes(LoopframePtr lf);
-  void showLoopframes(const LoopframeVector& lfs);
+  void showLoopClosures(LoopEdge& le);
+  void show(const LoopframeList& lfs, const FactorGraph& factors);
+
+  bool checkLoopframeBuf();
+  bool checkFactorGraphBuf(FactorGraphDisplay& fg);
+
+  AgentDisplayPtr getAgentsDisplay(int client);
 
   void updateDisplay();
+  void drawLoopClosureFactor();
   void getColors(std::vector<float>& color);
-  void saveTrajectory(const std::string &filename) ;
+  void saveTrajectory(const std::string& filename);
 
  private:
   int colors_index_ = 0;
@@ -52,10 +69,12 @@ class PangolinViewer {
   // 3D model rendering
   std::mutex m_model_3d_mutex;
   std::unordered_map<uint32_t, AgentDisplayPtr> m_agent_displays;
+  FactorGraphDisplay loopclosure_factors_;
 
   // 更新buf
-  std::mutex m_update_loopframe_buf_mtx;
-  std::queue<LoopframePtr> m_update_loopframe_buf;  // 【锁】
+  std::mutex update_mtx_;
+  std::queue<LoopframePtr> update_loopframe_buf_;  // 【锁】
+  std::list<FactorGraph> update_fg_buf_;
 
   // colors
   std::vector<VisColorRGB> m_pgl_colors;
