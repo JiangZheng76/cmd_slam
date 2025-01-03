@@ -43,7 +43,7 @@ struct LoopEdge {
   LoopframePtr m_from_lf;  // ref ｜ query
   LoopframePtr m_to_lf;    // cur ｜ match
 
-  InformationMat m_info;   // 信息矩阵
+  InformationMat m_info;   // 信息矩阵 
   TransMatrixType m_t_tf;  // from -> to ref -> to query->match
 
   precision_t m_icp_score;  // icp 匹配得分

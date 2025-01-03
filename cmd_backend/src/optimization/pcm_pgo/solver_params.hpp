@@ -30,6 +30,9 @@ enum class MultiRobotAlignMethod {
   GNC    // Use robust pose averaging with GNC
 };
 
+#define PCM_TRANS_THRES 20.0
+#define PCM_ROT_THRES 0.2
+
 struct PcmParams {
  public:
   PcmParams()
@@ -39,8 +42,8 @@ struct PcmParams {
         odom_rot_threshold(0.5),
         // dist_trans_threshold(0.01),
         // dist_rot_threshold(0.001),
-        dist_trans_threshold(40.0),  // 距离 10m
-        dist_rot_threshold(2.0),
+        dist_trans_threshold(PCM_TRANS_THRES),  // 距离 10m
+        dist_rot_threshold(PCM_ROT_THRES),
         incremental(true) {}
   // if threshold is < 0, check disabled
   // for Pcm

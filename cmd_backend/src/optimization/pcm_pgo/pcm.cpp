@@ -717,7 +717,11 @@ bool Pcm::checkLoopConsistent(TransMatrixType &result, double &dist,
                               double &rot_dist) {
   dist = result.translation().norm();  // 二范数
   dist = sqrt(dist);                   // 实际距离
-  rot_dist = result.rotationMatrix().norm();
+  auto R = result.rotationMatrix();
+  double trace = R.trace();
+  // 计算旋转角度θ
+  double theta = std::acos((trace - 1) / 2);
+  rot_dist = theta;
   if (dist < params_.dist_trans_threshold &&
       rot_dist < params_.dist_rot_threshold) {
     return true;

@@ -235,8 +235,6 @@ void PcmSolver::ceresSim3Optimize(std::vector<FactorGraph> &full_fgs,
     problem_options.enable_fast_removal = true;
     ceres::Problem problem(problem_options);
 
-    ceres::LocalParameterization *local_pose_param = new Sim3Parameterization();
-
     auto fix_key = full_value.getFixKey();
     if (full_value.find(fix_key) == full_value.end()) {
       SYLAR_LOG_FATAL(g_logger_solver)
@@ -245,22 +243,12 @@ void PcmSolver::ceresSim3Optimize(std::vector<FactorGraph> &full_fgs,
       SYLAR_ASSERT(false);
     }
     auto fix_pose = full_value[fix_key];
-
-    // 添加所有的顶点
-    for (auto &key_pose : full_value) {
-      problem.AddParameterBlock(key_pose.second.data(),
-                                Sim3Parameterization::Size(), local_pose_param);
-      if (key_pose.first == fix_key) {
-        SYLAR_LOG_DEBUG(g_logger_solver)
-            << "set fix frame: [client:" << GetKeyClientID(fix_key)
-            << ",id:" << GetKeyLoopframeID(fix_key) << "]";
-        problem.SetParameterBlockConstant(key_pose.second.data());
-      }
-    }
     // 添加边
-    ceres::LossFunctionWrapper *loss_function =
-        new ceres::LossFunctionWrapper(new ceres::CauchyLoss(OPT_ROBUST_LOSS),
-                                       ceres::TAKE_OWNERSHIP);  // 核函数
+    ceres::LossFunctionWrapper *loss_function = new ceres::LossFunctionWrapper(
+        new ceres::CauchyLoss(OPT_ROBUST_LOSS),  // CauchyLoss参数越小对于约束越严格
+        ceres::
+            TAKE_OWNERSHIP);  // 核函数
+                              // TAKE_OWNERSHIP是否自动释放CauchyLoss等这些资源
 
     for (auto &factor : full_fg) {
       auto from = factor.m_from_lf;
@@ -272,9 +260,23 @@ void PcmSolver::ceresSim3Optimize(std::vector<FactorGraph> &full_fgs,
           PoseGraphError::Create(sim3_tf, factor.m_info);
       // ??? 这里也是先后顺序的问题，在获取 full_value 的时候，没有和原来的一样
       // inverse
-      problem.AddResidualBlock(cost_function, nullptr,
+      problem.AddResidualBlock(cost_function, loss_function,
                                full_value[to_key].data(),
                                full_value[from_key].data());
+    }
+    // 添加所有的顶点
+    for (auto &key_pose : full_value) {
+      // problem.AddParameterBlock(key_pose.second.data(),
+      //                           Sim3Parameterization::Size(),
+      //                           new Sim3Parameterization());
+      problem.SetParameterization(key_pose.second.data(),
+                                  new Sim3Parameterization());
+      if (key_pose.first == fix_key) {
+        SYLAR_LOG_DEBUG(g_logger_solver)
+            << "set fix frame: [client:" << GetKeyClientID(fix_key)
+            << ",id:" << GetKeyLoopframeID(fix_key) << "]";
+        problem.SetParameterBlockConstant(key_pose.second.data());
+      }
     }
     // 迭代求解
     ceres::Solver::Options solver_options;
@@ -290,6 +292,10 @@ void PcmSolver::ceresSim3Optimize(std::vector<FactorGraph> &full_fgs,
     }
   }
 }
+
+void PGO(std::vector<FactorGraph> &full_fgs,
+         std::vector<Sim3LoopframeValue> &full_values,
+         const std::vector<bool> &need_optimize_idx) {}
 /// @brief 执行优化主函数
 void PcmSolver::optimize(std::vector<bool> &need_optimize_idx,
                          std::vector<Sim3LoopframeValue> &optimized_values) {

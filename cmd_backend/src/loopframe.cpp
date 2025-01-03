@@ -2,8 +2,6 @@
 
 #include "sophus/sim3.hpp"
 
-#define POSE_R_WEIGHT 1
-
 namespace cmd {
 Point2::Point2(const MsgPoint &msg)
     : m_u(msg.m_u),

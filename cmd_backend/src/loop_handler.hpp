@@ -2,14 +2,6 @@
 #include "map.hpp"
 #include "typedefs_backend.hpp"
 
-// normalize dso errors to roughly around 1.0
-#define DSO_ERROR_SCALE 5.0
-#define SCALE_ERROR_SCALE 0.1
-#define DIRECT_ERROR_SCALE 0.1
-#define ICP_ERROR_SCALE 1.0
-
-// the rotation estimated by DSO is much more accurate than translation
-#define POSE_R_WEIGHT 1e4
 namespace cmd {
 
 class LoopHandler {

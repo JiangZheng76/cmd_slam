@@ -12,8 +12,8 @@ class DSVComm : public FrontEndComm {
 
   // 需要重写的函数
   void publishLoopframe(dso::FrameHessian *fh, dso::CalibHessian *HCalib,
-                        precision_t dso_error = 0.01,
-                        precision_t scale_error = 0.01);
+                        precision_t dso_error = 1.0,
+                        precision_t scale_error = 1.0);
 private:
     int cur_id_ = -1;
 };

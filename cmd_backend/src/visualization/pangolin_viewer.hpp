@@ -26,8 +26,11 @@ struct VisColorRGB {
   const u_int8_t mu8R, mu8G, mu8B;
 };
 struct FactorDisplay {
+  int from_client_;
+  int to_client_;
   TransMatrixType from_wc;
   TransMatrixType to_wc;
+  TransMatrixType Ttf_;
   FactorDisplay(const LoopEdge& factor);
 };
 class FactorGraphDisplay : public std::vector<FactorDisplay> {

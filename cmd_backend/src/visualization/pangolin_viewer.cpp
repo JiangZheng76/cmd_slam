@@ -16,6 +16,9 @@ static LoggerPtr g_logger_viewer = SYLAR_LOG_NAME("Viewer");
 FactorDisplay::FactorDisplay(const LoopEdge &factor) {
   auto from = factor.m_from_lf;
   auto to = factor.m_to_lf;
+  from_client_ = from->m_client_id;
+  to_client_ = to->m_client_id;
+  Ttf_ = factor.m_t_tf;
   from_wc = from->m_twc;
   to_wc = to->m_twc;
 }
@@ -76,7 +79,7 @@ bool PangolinViewer::checkFactorGraphBuf(FactorGraphDisplay &fg) {
   }
   return false;
 }
-AgentDisplayPtr PangolinViewer::getAgentsDisplay(int client){
+AgentDisplayPtr PangolinViewer::getAgentsDisplay(int client) {
   AgentDisplayPtr agent_display = nullptr;
   if (m_agent_displays.find(client) == m_agent_displays.end()) {
     std::vector<float> colors;
@@ -105,12 +108,37 @@ void PangolinViewer::updateDisplay() {
 void PangolinViewer::drawLoopClosureFactor() {
   glColor3f(1.0, 0, 0);
   glLineWidth(2);
+  // 匹配的两帧之间的回环
   glBegin(GL_LINES);
   for (auto &factor : loopclosure_factors_) {
     Point3 from_trans = factor.from_wc.translation();
     Point3 to_trans = factor.to_wc.translation();
     glVertex3d(from_trans[0], from_trans[1], from_trans[2]);
     glVertex3d(to_trans[0], to_trans[1], to_trans[2]);
+  }
+  glEnd();
+  glLineWidth(2);
+  // 真实的回环距离
+  glBegin(GL_LINES);
+  for (auto &factor : loopclosure_factors_) {
+    Point3 start_wc;
+    Point3 lc_wc;
+    Point3 end_wc;
+    if (factor.from_client_ < factor.to_client_) {
+      start_wc = factor.from_wc.translation();
+      end_wc = factor.to_wc.translation();
+      lc_wc = (factor.from_wc * factor.Ttf_.inverse()).translation();
+    } else {
+      start_wc = factor.to_wc.translation();
+      end_wc = factor.from_wc.translation();
+      lc_wc = (factor.to_wc * factor.Ttf_).translation();
+    }
+    glColor3f(0.0, 1.0, 0.0);
+    glVertex3d(start_wc[0], start_wc[1], start_wc[2]);
+    glVertex3d(lc_wc[0], lc_wc[1], lc_wc[2]);
+    glColor3f(0.0, 1.0, 1.0);
+    glVertex3d(lc_wc[0], lc_wc[1], lc_wc[2]);
+    glVertex3d(end_wc[0], end_wc[1], end_wc[2]);
   }
   glEnd();
 }
