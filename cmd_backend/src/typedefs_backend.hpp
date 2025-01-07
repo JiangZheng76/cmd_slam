@@ -21,7 +21,7 @@
 #define ICP_TRANS_EPSILON 0.01
 #define ICP_EUC_EPSILON 0.001
 // #define ICP_THRES 1.5 
-#define ICP_THRES 1.6 
+#define ICP_THRES 2.0
 
 // optimization
 #define OPT_ROBUST_LOSS 1.0
@@ -38,10 +38,6 @@
 #define VIEWER_WIDTH 640
 #define VIEWER_HIGH 640
 
-// loopframe
-#define DSO_ERROR_SCALE 5.0
-#define SCALE_ERROR_SCALE 0.1
-
 // normalize dso errors to roughly around 1.0
 #define DSO_ERROR_SCALE 5.0
 #define SCALE_ERROR_SCALE 0.1
@@ -50,6 +46,9 @@
 
 // the rotation estimated by DSO is much more accurate than translation
 #define POSE_R_WEIGHT 1e4
+
+// loop handler 
+#define LOOPHANDLER_THRES 70
 
 namespace cmd {
 inline bool debug() {

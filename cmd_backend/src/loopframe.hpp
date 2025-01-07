@@ -14,9 +14,6 @@
 #include "loop_closure/scancontext.hpp"
 #include "typedefs_backend.hpp"
 
-// #define FMT_HEADER_ONLY
-// #include "fmt/format.h"
-
 namespace cmd {
 
 class Point2 {
@@ -43,7 +40,7 @@ struct LoopEdge {
   LoopframePtr m_from_lf;  // ref ｜ query
   LoopframePtr m_to_lf;    // cur ｜ match
 
-  InformationMat m_info;   // 信息矩阵 
+  InformationMat m_info;   // 信息矩阵
   TransMatrixType m_t_tf;  // from -> to ref -> to query->match
 
   precision_t m_icp_score;  // icp 匹配得分
@@ -51,7 +48,7 @@ struct LoopEdge {
 
   EdgeType m_type;
 
-  LoopEdge(){};
+  LoopEdge() {};
   LoopEdge(LoopframePtr from, LoopframePtr to, const TransMatrixType &t_tf,
            precision_t icp_error, precision_t sc_error, EdgeType type);
 };
@@ -69,17 +66,17 @@ class Loopframe : public std::enable_shared_from_this<Loopframe> {
   flann::Matrix<float> m_ringkey;  // fast detect loop
   TransMatrixType m_t_pca_rig;     // transformation from rig to pca frame
 
-  Calibration m_calib;    // calib for slam
   bool m_is_init;
-  TransMatrixType m_twc;  // coordinate in pose graph
+  Calibration m_calib;             // calib for slam
+  TransMatrixType m_twc;           // coordinate in pose graph
   TransMatrixType m_original_twc;  // coordinate in pose graph
 
   // ceres optimization
   VecSim3 m_ceres_pose;  // tcw
 
   // heuristics for setting edge information
-  precision_t m_dso_error;  // 前后帧之间的残差函数的结果值 乘上了一个系数
-  precision_t m_scale_error;  // 优化尺度的擦差函数的结果值乘上了一个系数
+  precision_t m_dso_error;        // 前后帧之间的残差函数的结果值 乘上了一个系数
+  precision_t m_scale_error;      // 优化尺度的擦差函数的结果值乘上了一个系数
   precision_t m_ab_exposure;
 
   // loop edge

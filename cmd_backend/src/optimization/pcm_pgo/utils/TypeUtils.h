@@ -24,6 +24,25 @@ class FactorGraph : public std::vector<LoopEdge> {
   void add(const LoopEdge &factor) { push_back(factor); }
 };
 using LoopframeKey = uint64_t;
+struct FactorKey {
+  long from;
+  long to;
+  FactorKey(LoopframeKey other_from, LoopframeKey other_to) {
+    from = static_cast<long>(other_from);
+    to = static_cast<long>(other_to);
+  }
+  bool operator==(const FactorKey &other) const {
+    long other_from = static_cast<long>(other.from);
+    long other_to = static_cast<long>(other.to);
+    if (other_from == from && other_to == to) {
+      return true;
+    }
+    if (other_from == to && other_to == from) {
+      return true;
+    }
+    return false;
+  }
+};
 inline int_t GetKeyClientID(const LoopframeKey &key) {
   int_t client_id = static_cast<uint32_t>(key >> 32);
   // SYLAR_ASSERT(client_id != 0);
@@ -175,6 +194,14 @@ struct hash<cmd::ObservationId> {
     using std::hash;
     return hash<char>()(id.client_a) + hash<char>()(id.client_b) +
            hash<char>()(id.client_a) * hash<char>()(id.client_b);
+  }
+};
+template <>
+struct hash<cmd::FactorKey> {
+  std::size_t operator()(const cmd::FactorKey &key) const {
+    using std::hash;
+    return hash<long>()(key.from) + hash<long>()(key.to) +
+           hash<long>()(key.from) * hash<long>()(key.to);
   }
 };
 }  // namespace std

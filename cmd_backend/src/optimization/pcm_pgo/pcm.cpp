@@ -214,6 +214,25 @@ TransMatrixType Pcm::getCurrentKeyPose(LoopframeKey key) {
   }
   return odom_trajectories_[prev_client][key];
 }
+bool checkNewFactor(const LoopEdge& factor){
+  static std::unordered_map<FactorKey,size_t> all_factor_values;
+  const auto& from = factor.m_from_lf;
+  const auto& to = factor.m_to_lf;
+  auto from_key = GetKey(from->m_client_id,from->m_lf_id);
+  auto to_key = GetKey(to->m_client_id,to->m_lf_id);
+  FactorKey key(from_key,to_key);
+  if(all_factor_values.find(key) != all_factor_values.end()){
+    all_factor_values[key]++;
+    if(debug()){
+      SYLAR_LOG_DEBUG(g_logger_solver)
+          << "checkNewFactor: " << DumpKey(from_key) << "->" << DumpKey(to_key)
+          << " " << all_factor_values[key] << " times";
+    }
+    return false;
+  }
+  all_factor_values.insert({key,1});
+  return true;
+}
 /// @brief
 /// @param new_factors
 /// @param new_loopframes [key,tcf]
@@ -257,7 +276,9 @@ bool Pcm::removeOutliers(
       } break;
       case EdgeType::LOOPCLOSURE:
         // 后面处理
-        loop_closure_factors.add(new_factors[i]);
+        if(checkNewFactor(new_factors[i])){
+          loop_closure_factors.add(new_factors[i]);
+        }
         break;
       case EdgeType::UNCLASSIFIED:
         SYLAR_ASSERT2(false, "出现异常factor");

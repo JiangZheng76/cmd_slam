@@ -23,7 +23,9 @@ class LoopHandler {
 
   // buff
   MutexType m_mtx_buf_lf;
+  bool buf_or_requery_ = true; // 交替选择
   LoopframeList m_buf_lfs;  // LoopHandler 中新加入待处理的 LF
+  LoopframeList m_requery_lfs_;  // LoopHandler 中新加入重检测待处理的 LF
 
   LoopframeVector
       m_preocessed_lf;  // 所有回环处理过的帧，所有帧，包括不是顶点的帧

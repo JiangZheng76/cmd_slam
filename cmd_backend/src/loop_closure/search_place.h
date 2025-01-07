@@ -17,7 +17,7 @@ namespace cmd {
 /// @param candidates
 inline void search_ringkey(const flann::Matrix<float> &ringkey,
                            flann::Index<flann::L2<float>> *ringkeys,
-                           std::vector<int> &candidates) {
+                           std::vector<int> &candidates, bool new_qurey) {
   // query ringkey
   // 利用ringkey 快速搜索候选关键帧的id
   if (ringkeys->size() > FLANN_NN) {
@@ -31,26 +31,27 @@ inline void search_ringkey(const flann::Matrix<float> &ringkey,
       }
     }
   }
-
-  // store ringkey in waiting queue of size LOOP_MARGIN
-  // 搜索完毕之后
-  // 将倒数第LOOP_MARGIN帧的数据加入到候选搜索帧中，最新的先不添加进去在ringkey_queue中暂存起来。
-  int r_cols = ringkey.cols;
-  // 帧id的下标
-  static int queue_idx = 0;
-  static flann::Matrix<float> ringkey_queue(new float[LOOP_MARGIN * r_cols],
-                                            LOOP_MARGIN, r_cols);
-  if (queue_idx >= LOOP_MARGIN) {
-    flann::Matrix<float> ringkey_to_add(new float[r_cols], 1, r_cols);
-    for (int j = 0; j < r_cols; j++) {
-      ringkey_to_add[0][j] = ringkey_queue[queue_idx % LOOP_MARGIN][j];
+  if (new_qurey) {
+    // store ringkey in waiting queue of size LOOP_MARGIN
+    // 搜索完毕之后
+    // 将倒数第LOOP_MARGIN帧的数据加入到候选搜索帧中，最新的先不添加进去在ringkey_queue中暂存起来。
+    int r_cols = ringkey.cols;
+    // 帧id的下标
+    static int queue_idx = 0;
+    static flann::Matrix<float> ringkey_queue(new float[LOOP_MARGIN * r_cols],
+                                              LOOP_MARGIN, r_cols);
+    if (queue_idx >= LOOP_MARGIN) {
+      flann::Matrix<float> ringkey_to_add(new float[r_cols], 1, r_cols);
+      for (int j = 0; j < r_cols; j++) {
+        ringkey_to_add[0][j] = ringkey_queue[queue_idx % LOOP_MARGIN][j];
+      }
+      ringkeys->addPoints(ringkey_to_add);
     }
-    ringkeys->addPoints(ringkey_to_add);
+    for (int j = 0; j < r_cols; j++) {
+      ringkey_queue[queue_idx % LOOP_MARGIN][j] = ringkey[0][j];
+    }
+    queue_idx++;
   }
-  for (int j = 0; j < r_cols; j++) {
-    ringkey_queue[queue_idx % LOOP_MARGIN][j] = ringkey[0][j];
-  }
-  queue_idx++;
 }
 /// @brief [a]遍历所有候选帧的sc signature 。
 /// [b] scancontext的格子对齐

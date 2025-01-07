@@ -31,7 +31,7 @@ enum class MultiRobotAlignMethod {
 };
 
 #define PCM_TRANS_THRES 20.0
-#define PCM_ROT_THRES 0.2
+#define PCM_ROT_THRES 0.15
 
 struct PcmParams {
  public:

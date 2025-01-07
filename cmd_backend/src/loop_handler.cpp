@@ -35,18 +35,28 @@ void LoopHandler::Run() {
   SYLAR_LOG_INFO(g_logger_loop) << "--> START Loop Handler Thread.";
   while (m_running) {
     LoopframePtr query_frame = nullptr;
+    bool new_query = false;
     {
-      if (m_buf_lfs.empty()) {
-        usleep(500);
-        continue;
+      if (m_requery_lfs_.size() < LOOPHANDLER_THRES) { // 每隔 70 就会重新检测一次 
+      // !!! 有问题，影响回环检测，Scancontext 里面需要添加约束
+        if (m_buf_lfs.empty()) {
+          usleep(100);
+          continue;
+        }
+        MutexType::Lock lk(m_mtx_buf_lf);
+        query_frame = m_buf_lfs.front();
+        new_query = true;
+        m_buf_lfs.pop_front();
+        m_requery_lfs_.push_back(query_frame);
+        m_preocessed_lf.push_back(query_frame);
+      }else {       
+        query_frame = m_requery_lfs_.front();
+        m_requery_lfs_.pop_front();
+        new_query = false;
       }
-      MutexType::Lock lk(m_mtx_buf_lf);
-      query_frame = m_buf_lfs.front();
-      m_buf_lfs.pop_front();
     }
     SYLAR_ASSERT(query_frame);
 
-    m_preocessed_lf.push_back(query_frame);
     // 没有对尺度优化信息的不进行优化
     if (m_lidar_range < 0 || query_frame->m_scale_error < 0) {
       // SYLAR_LOG_INFO(g_logger_loop) << "skip loopframe " <<
@@ -75,7 +85,7 @@ void LoopHandler::Run() {
     // fast search by ringkey
     // 先用keyring进行初步筛选
     std::vector<int> ringkey_candidates;
-    search_ringkey(query_frame->m_ringkey, m_ringkeys, ringkey_candidates);
+    search_ringkey(query_frame->m_ringkey, m_ringkeys, ringkey_candidates,new_query);
 
     // 候选帧不为空，搜索到候选帧
     if (!ringkey_candidates.empty()) {
@@ -119,7 +129,7 @@ void LoopHandler::Run() {
               << ",id:" << matched_frame->m_lf_id << "] " << icp_error << " No";
           continue;
         } else {
-          SYLAR_LOG_DEBUG(g_logger_loop)
+          SYLAR_LOG_INFO(g_logger_loop)
               << "Robot:[" << query_frame->m_client_id << ","
               << matched_frame->m_client_id << "]"
               << "[client:" << query_frame->m_client_id

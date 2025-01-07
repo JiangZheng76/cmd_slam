@@ -29,8 +29,6 @@ find_package(PCL 1.13 REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(Pangolin REQUIRED)
 find_package(GTest REQUIRED)
-# 查找GLUT库
-find_package(GLUT REQUIRED)
 set(GTSAM_INCLUDE_DIR /home/sysu/gtsam)
 set(GTSAM_LIB /home/sysu/gtsam/build/gtsam/libgtsam.so)
 # find_package(Eigen3 REQUIRED)
@@ -60,7 +58,6 @@ set(LIBS
     ${catkin_LIBRARIES} # mysyalr 的库在 cmd_comm 中已经定义了路径了
     ${Pangolin_LIBRARIES}
     ${GTSAM_LIB}
-    ${GLUT_LIBRARY}
 )
 
 set(BACKEND_SOURCE_FILES
