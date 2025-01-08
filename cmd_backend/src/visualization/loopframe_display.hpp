@@ -34,6 +34,7 @@ class LoopframeDisplay {
   bool m_active;
   bool m_need_refresh;
   uint64_t m_lf_id;
+  double m_timestamp;
   TransMatrixType m_Twc;
 
   MutexType m_muetx;

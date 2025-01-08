@@ -222,14 +222,15 @@ void PangolinViewer::Run() {
     pangolin::FinishFrame();
   }
   // 保存微位姿信息
-  saveTrajectory("Trajectory");
+  saveKittiTrajectory("Trajectory");
+  saveTumTrajectory("Trajectory");
   exit(1);
 }
-void PangolinViewer::saveTrajectory(const std::string &filename) {
+void PangolinViewer::saveKittiTrajectory(const std::string &filename) {
   char buff[FILENAME_MAX];
   getcwd(buff, sizeof(buff));
   std::string save_path(buff);
-  save_path += "/" + filename;
+  save_path += "/" + filename + "/kitti";
 
   struct stat st;
   if (!(stat(save_path.c_str(), &st) == 0 && S_ISDIR(st.st_mode))) {
@@ -252,7 +253,8 @@ void PangolinViewer::saveTrajectory(const std::string &filename) {
     for (const auto &lf : agent->m_list_displays) {
       auto Twc = lf->m_Twc.matrix().transpose();
       int rows = Twc.rows(), cols = Twc.cols();
-      for (int i = 0; i < rows; i++) {
+      // 保存格式为 kitti 格式
+      for (int i = 0; i < rows - 1; i++) {
         for (int j = 0; j < cols; j++) {
           file_stream << Twc(j, i) << " ";
         }
@@ -260,7 +262,46 @@ void PangolinViewer::saveTrajectory(const std::string &filename) {
       file_stream << std::endl;
     }
     file_stream.close();
-    SYLAR_LOG_INFO(g_logger_viewer) << "save trajectory to " << client_filename;
+    SYLAR_LOG_INFO(g_logger_viewer)
+        << "save kitti trajectory to " << client_filename;
+  }
+}
+
+void PangolinViewer::saveTumTrajectory(const std::string &filename) {
+  char buff[FILENAME_MAX];
+  getcwd(buff, sizeof(buff));
+  std::string save_path(buff);
+  save_path += "/" + filename + "/tum";
+
+  struct stat st;
+  if (!(stat(save_path.c_str(), &st) == 0 && S_ISDIR(st.st_mode))) {
+    int result = mkdir(save_path.c_str(), 0777);
+    if (result == -1) {
+      SYLAR_LOG_INFO(g_logger_viewer) << "mkdir " << save_path << " failed";
+      return;
+    }
+  }
+  for (auto &[client, agent] : m_agent_displays) {
+    std::string client_filename =
+        save_path + "/" + std::to_string(client) + ".txt";
+    std::ofstream file_stream(client_filename);
+    if (!file_stream.is_open()) {
+      std::cerr << "Failed to open the file: " << client_filename << std::endl;
+      SYLAR_LOG_ERROR(g_logger_viewer)
+          << "Failed to open the file: " << client_filename;
+      break;
+    }
+    for (const auto &lf : agent->m_list_displays) {
+      auto quat = Eigen::Quaterniond(lf->m_Twc.rotationMatrix());
+      auto trans = lf->m_Twc.translation();
+      // 保存格式为 tum 格式
+      file_stream << lf->m_timestamp << " " << trans(0) << " " << trans(1)  << " "
+                  << trans(2)  << " " << quat.x() << " " << quat.y() << " "
+                  << quat.z() << " " << quat.w() << std::endl;
+    }
+    file_stream.close();
+    SYLAR_LOG_INFO(g_logger_viewer)
+        << "save tum trajectory to " << client_filename;
   }
 }
 

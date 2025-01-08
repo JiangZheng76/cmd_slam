@@ -214,23 +214,23 @@ TransMatrixType Pcm::getCurrentKeyPose(LoopframeKey key) {
   }
   return odom_trajectories_[prev_client][key];
 }
-bool checkNewFactor(const LoopEdge& factor){
-  static std::unordered_map<FactorKey,size_t> all_factor_values;
-  const auto& from = factor.m_from_lf;
-  const auto& to = factor.m_to_lf;
-  auto from_key = GetKey(from->m_client_id,from->m_lf_id);
-  auto to_key = GetKey(to->m_client_id,to->m_lf_id);
-  FactorKey key(from_key,to_key);
-  if(all_factor_values.find(key) != all_factor_values.end()){
+bool checkNewFactor(const LoopEdge &factor) {
+  static std::unordered_map<FactorKey, size_t> all_factor_values;
+  const auto &from = factor.m_from_lf;
+  const auto &to = factor.m_to_lf;
+  auto from_key = GetKey(from->m_client_id, from->m_lf_id);
+  auto to_key = GetKey(to->m_client_id, to->m_lf_id);
+  FactorKey key(from_key, to_key);
+  if (all_factor_values.find(key) != all_factor_values.end()) {
     all_factor_values[key]++;
-    if(debug()){
+    if (debug()) {
       SYLAR_LOG_DEBUG(g_logger_solver)
           << "checkNewFactor: " << DumpKey(from_key) << "->" << DumpKey(to_key)
           << " " << all_factor_values[key] << " times";
     }
     return false;
   }
-  all_factor_values.insert({key,1});
+  all_factor_values.insert({key, 1});
   return true;
 }
 /// @brief
@@ -276,7 +276,7 @@ bool Pcm::removeOutliers(
       } break;
       case EdgeType::LOOPCLOSURE:
         // 后面处理
-        if(checkNewFactor(new_factors[i])){
+        if (checkNewFactor(new_factors[i])) {
           loop_closure_factors.add(new_factors[i]);
         }
         break;
@@ -636,24 +636,31 @@ void Pcm::findInliers() {
       // update inliers, or consistent factors, according to max clique result
       for (size_t i = 0; i < num_inliers; i++) {
         it->second.consistent_factors.add(it->second.factors[inliers_idx[i]]);
-        ss << " " << inliers_idx[i];
+        if (debug()) {
+          auto from = it->second.factors[inliers_idx[i]].m_from_lf;
+          auto to = it->second.factors[inliers_idx[i]].m_to_lf;
+          ss << inliers_idx[i] << " [client:" << from->m_client_id
+             << ",id:" << from->m_lf_id << "]->[client:" << to->m_client_id
+             << ",id:" << to->m_lf_id << "]"
+             << ",trans_dist:"
+             << it->second.dist_matrix(inliers_idx[0], inliers_idx[i])
+             << ",rot_dist:"
+             << it->second.rot_matrix(inliers_idx[0], inliers_idx[i]) << "\n";
+        }
+      }
+      if (debug() && num_inliers != 0) {
+        auto robot_pair = it->first;
+        auto client_a = robot_pair.client_a;
+        auto client_b = robot_pair.client_b;
+        SYLAR_LOG_DEBUG(g_logger_solver)
+            << "Robot pair: [" << client_a << "," << client_b
+            << "] total factors:" << loop_closures_[robot_pair].factors.size()
+            << " inliers num: " << num_inliers << " inliers :\n"
+            << ss.str();
       }
     } else {
       it->second.consistent_factors = it->second.factors;
       num_inliers = it->second.factors.size();
-    }
-    if (debug()) {
-      auto client_a = it->first.client_a;
-      auto client_b = it->first.client_b;
-      SYLAR_LOG_DEBUG(g_logger_solver)
-          << "Robot pair: [" << client_a << "," << client_b
-          << "] num_inliers: " << num_inliers << "\n adj matrix: \n"
-          << it->second.adj_matrix.bottomRightCorner<7, 7>()
-          << "\n mah distance matrix: \n"
-          << it->second.dist_matrix.bottomRightCorner<7, 7>()
-          << "\n rot distance matrix: \n"
-          << it->second.rot_matrix.bottomRightCorner<7, 7>()
-          << "\n inliers ids :[" << ss.str() << "]";
     }
     it++;
     total_good_lc_ = total_good_lc_ + num_inliers;

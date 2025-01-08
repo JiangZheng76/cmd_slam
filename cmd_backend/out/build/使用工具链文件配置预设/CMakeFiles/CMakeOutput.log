@@ -559,3 +559,19 @@ Run Build Command:"/usr/bin/ninja" "cmTC_500a4"
     Feature record: CXX_FEATURE:0cxx_variable_templates
     Feature record: CXX_FEATURE:0cxx_variadic_macros
     Feature record: CXX_FEATURE:0cxx_variadic_templates
+Determining if the include file pthread.h exists passed with the following output:
+Change Dir: /home/sysu/cmd_ws/src/cmd-slam/cmd_backend/out/build/使用工具链文件配置预设/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/ninja" "cmTC_35a24"
+[1/2] Building C object CMakeFiles/cmTC_35a24.dir/CheckIncludeFile.c.o
+[2/2] Linking C executable cmTC_35a24
+
+
+Determining if the function pthread_create exists in the pthread passed with the following output:
+Change Dir: /home/sysu/cmd_ws/src/cmd-slam/cmd_backend/out/build/使用工具链文件配置预设/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/ninja" "cmTC_6b43b"
+[1/2] Building C object CMakeFiles/cmTC_6b43b.dir/CheckFunctionExists.c.o
+[2/2] Linking C executable cmTC_6b43b
+
+

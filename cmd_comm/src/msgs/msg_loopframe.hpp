@@ -90,7 +90,7 @@ class MsgLoopframe {
   int_t m_lf_id;
   int_t m_client_id;
   int_t m_incoming_id;  // increasing id, for ground truth
-  uint64_t m_timestamp;
+  double m_timestamp;
   MsgType m_msgtype;  // 当前 msg 的类型 [msg 长度, SentOnce, id.first,
                       // id.second，类型（lf or point）]
 

@@ -59,7 +59,7 @@ class Loopframe : public std::enable_shared_from_this<Loopframe> {
   uint32_t m_lf_id;        // kF id, for pose graph and visualization
   uint32_t m_incoming_id;  // increasing id, for ground truth
   uint32_t m_client_id;
-  uint64_t m_timestamp;
+  double m_timestamp;
 
   // loop detection
   SigType m_signature;             // place signature

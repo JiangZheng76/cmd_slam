@@ -1,5 +1,4 @@
 #pragma once
-#include <pangolin/pangolin.h>
 
 #include <deque>
 #include <map>
@@ -60,7 +59,8 @@ class PangolinViewer {
   void updateDisplay();
   void drawLoopClosureFactor();
   void getColors(std::vector<float>& color);
-  void saveTrajectory(const std::string& filename);
+  void saveKittiTrajectory(const std::string& filename);
+  void saveTumTrajectory(const std::string& filename);
 
  private:
   int colors_index_ = 0;

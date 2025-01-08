@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package format="2">
+    <name>cmd_backend</name>
+    <version>1.0.0</version>
+    <description>cmd</description>
+    <maintainer email="2440877322@qq.com"> </maintainer>
+    <license>BSD</license>
+
+    <buildtool_depend>catkin</buildtool_depend>
+    <buildtool_depend>catkin_simple</buildtool_depend>
+
+
+    <depend>roscpp</depend>
+    <depend>std_msgs</depend>
+    <!-- <depend>eigen_catkin</depend> -->
+    <depend>cmd_comm</depend>
+    <depend>yaml-cpp</depend>
+
+    <export></export>
+</package>

@@ -1,7 +1,6 @@
 #include "loopframe_display.hpp"
 
 #include "loopframe.hpp"
-#include "pangolin/pangolin.h"
 
 namespace cmd {
 LoopframeDisplay::LoopframeDisplay(LoopframePtr lf) {
@@ -23,6 +22,7 @@ void LoopframeDisplay::setFromLF(LoopframePtr lf) {
   MutexType::Lock lk(m_muetx);
 
   m_lf_id = lf->m_lf_id;
+  m_timestamp = lf->m_timestamp;
   // add all traces, inlier and outlier points.
   // 所有的已经边缘化的点
   int npoints = lf->m_points.size();

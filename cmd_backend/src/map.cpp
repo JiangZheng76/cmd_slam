@@ -182,7 +182,7 @@ void Mapmanager::OptimizeRun() {
         checkOptimizeAndViewUpdate();  // 更新 viewer
       }
     };
-    usleep(100);
+    usleep(5000); // 避免密集优化
   }
   SYLAR_LOG_INFO(g_logger_map) << "<-- OPT thread is end.";
 }
