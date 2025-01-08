@@ -203,7 +203,7 @@ int CommunicatorBase::recvAll(unsigned int sz, MsgType &buffer) {
 }
 /// @brief 接收数据的线程
 void CommunicatorBase::recvMsg() {
-  SYLAR_LOG_INFO(g_logger_base) << "--> Start Recv Thread";
+  SYLAR_LOG_INFO(g_logger_base) << "+++ START Recv Thread +++";
   size_t total_msg = 0;
   m_msgtype_container.resize(ContainerSize * 5);
   size_t type_size = sizeof(m_msgtype_container[0]) * ContainerSize * 5;
@@ -211,14 +211,14 @@ void CommunicatorBase::recvMsg() {
     // ？？？ 不是很懂，一次性收了这么多不会污染后面的 msgloopframe
     // 么？（发送的时候也是一次性发送 10 个 msgtype，不够补 0）
     if (recvAll(type_size, m_msgtype_container)) {
-      SYLAR_LOG_INFO(g_logger_base) << "--> Exit Recv Thread";
+      SYLAR_LOG_INFO(g_logger_base) << "--- Exit Recv Thread ---";
       setFinish();
       break;
     }
     // 大小为 1 ，接受到 client id
     if (m_msgtype_container[0] == 1) {
       m_client_id = m_msgtype_container[1];
-      SYLAR_LOG_INFO(g_logger_base) << "--> Set Client ID: " << m_client_id;
+      SYLAR_LOG_DEBUG(g_logger_base) << "--> Set Client ID: " << m_client_id;
       m_msgtype_container[0] = 0;  // 长度为 0 ，后面不再处理
     }
 
@@ -230,14 +230,14 @@ void CommunicatorBase::recvMsg() {
     std::unique_lock<std::mutex> lk(m_mtx_recv_buf);
     m_recv_buf.clear();  // 每一次接收前都要重置
     if (recvAll(total_msg, m_recv_buf)) {
-      SYLAR_LOG_INFO(g_logger_base) << "----> Exit Recv Thread\n";
+      SYLAR_LOG_INFO(g_logger_base) << "--- Exit Recv Thread ---";
       setFinish();
       break;
     }
     writeToBuffer();
 
     if (shallFinish()) {
-      SYLAR_LOG_INFO(g_logger_base) << "----> Exit Recv Thread\n";
+      SYLAR_LOG_INFO(g_logger_base) << "--- Exit Recv Thread ---";
       break;
     }
   }
@@ -391,7 +391,7 @@ void CommunicatorBase::processBufferIn() {
 }
 
 void CommunicatorBase::showResult() {
-  SYLAR_LOG_INFO(g_logger_base) << "CommunicatorBase::showResult() 未实现.";
+  // SYLAR_LOG_INFO(g_logger_base) << "CommunicatorBase::showResult() 未实现.";
 }
 
 }  // namespace cmd

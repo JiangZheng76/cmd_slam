@@ -16,7 +16,7 @@ MapOptimizationWrap::~MapOptimizationWrap() { m_map->setOptimizedMode(); }
 void Optimization::Sim3PoseGraphOptimization(MapPtr map) {
   // 更改 map下面的 frammanager 优化状态
   MapOptimizationWrap map_wrap(map);
-  SYLAR_LOG_INFO(g_logger_sys) << "--> PGO START ";
+  SYLAR_LOG_DEBUG(g_logger_sys) << "--> PGO START ";
   // 创建问题
   ceres::Problem::Options problem_options;
   problem_options.enable_fast_removal = true;
@@ -80,7 +80,7 @@ void Optimization::PCMPoseGraphOptimization(MapPtr map, LoopEdgeVector les) {
   SYLAR_ASSERT2(map->m_opt_mode == OptimizationMode::PCM_OUTLIER,
                 "OptimizationMode is : " + map->m_opt_mode);
 
-  SYLAR_LOG_INFO(g_logger_sys) << "--> PCM PGO START ";
+  SYLAR_LOG_DEBUG(g_logger_sys) << "--> PCM PGO START ";
   MapOptimizationWrap map_wrap(map);
 
   // map->solver_->insertLoopEdgeAndUpdate(les, true); // 启动优化

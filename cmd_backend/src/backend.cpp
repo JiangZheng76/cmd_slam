@@ -15,10 +15,10 @@ CmdBackend::CmdBackend() {
       new Thread(std::bind(&CmdBackend::Run, this), "backend thread."));
 }
 void CmdBackend::Run() {
-  SYLAR_LOG_INFO(g_logger_backend) << "--> START cmd-slam backend.";
+  SYLAR_LOG_DEBUG(g_logger_backend) << "--> START cmd-slam backend.";
   acceptAgent();
   connectSocket();
-  SYLAR_LOG_INFO(g_logger_backend) << "<-- END cmd-slam backend.";
+  SYLAR_LOG_DEBUG(g_logger_backend) << "<-- END cmd-slam backend.";
 }
 void CmdBackend::acceptAgent() {
   std::stringstream ss;
@@ -57,7 +57,7 @@ void CmdBackend::connectSocket() {
     m_agents.push_back(agent);
 
     SYLAR_LOG_INFO(g_logger_backend)
-        << "--> ACCEPT NEW Agent_" << agent->m_client_id;
+        << "ACCEPT NEW Agent_" << agent->m_client_id;
   }
 }
 }  // namespace cmd

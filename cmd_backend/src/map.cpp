@@ -11,6 +11,7 @@
 
 namespace cmd {
 static LoggerPtr g_logger_map = SYLAR_LOG_NAME("Map");
+TimeCosters pp_costs_("pp_cost");  // point prepare
 Framemanager::Framemanager(int client_id)
     : m_clientId(client_id), m_optimizing(false) {}
 void Framemanager::updateFramesFromCeres() {
@@ -83,14 +84,11 @@ void Framemanager::genImiLidarScan(LoopframePtr lf) {
 
     /* ============= Preprocess points to have sphereical shape ============= */
     m_id_pose_wc[cur_id] = Twc.log();
-    // auto t0 = std::chrono::high_resolution_clock::now();
+    auto t0 = TimeCosters::GetNow();
     generate_spherical_points(m_pts_nearby, m_id_pose_wc, Twc.inverse(),
                               m_lidar_range, pts_spherical);
-    // auto t1 = std::chrono::high_resolution_clock::now();
-    // auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t1
-    // - t0);
-    // pts_generation_time_.emplace_back(std::chrono::duration_cast<std::chrono::microseconds>(t1
-    // - t0));
+    auto t1 = TimeCosters::GetNow();
+    GetPpCosts().addCost(t0, t1);
   }
   lf->m_pts_spherical = pts_spherical;
 }
@@ -138,7 +136,7 @@ bool Mapmanager::checkNewFrameBuf(LoopframeList &lfs) {
   return true;
 }
 void Mapmanager::Run() {
-  SYLAR_LOG_INFO(g_logger_map) << "--> START map manager ";
+  SYLAR_LOG_DEBUG(g_logger_map) << "--> START map manager ";
   while (m_runing) {
     LoopframeList lfs;
     if (checkNewFrameBuf(lfs)) {
@@ -151,9 +149,18 @@ void Mapmanager::Run() {
     usleep(50);
   }
   SYLAR_LOG_INFO(g_logger_map) << "<-- END map manager ";
+  SYLAR_LOG_INFO(g_logger_map)
+      << "\n*************** cmd backend Time(ms) ***************\n"
+      << GetPpCosts().Dump() << "\n"
+      << GetScCosts().Dump() << "\n"
+      << GetIcpCosts().Dump() << "\n"
+      << GetRkCosts().Dump() << "\n"
+      << GetPgoCosts().Dump() << "\n"
+      << GetPcmCosts().Dump() << "\n"
+      << "****************************************************";
 }
 void Mapmanager::OptimizeRun() {
-  SYLAR_LOG_INFO(g_logger_map) << "--> OPT START";
+  SYLAR_LOG_DEBUG(g_logger_map) << "--> OPT START";
   while (optimize_running_) {
     FactorGraph new_factors;
     LoopframeValue new_vals;  // [key,twc]
@@ -182,7 +189,7 @@ void Mapmanager::OptimizeRun() {
         checkOptimizeAndViewUpdate();  // 更新 viewer
       }
     };
-    usleep(5000); // 避免密集优化
+    usleep(5000);  // 避免密集优化
   }
   SYLAR_LOG_INFO(g_logger_map) << "<-- OPT thread is end.";
 }

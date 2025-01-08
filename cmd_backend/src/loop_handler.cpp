@@ -7,6 +7,9 @@
 
 namespace cmd {
 static LoggerPtr g_logger_loop = SYLAR_LOG_NAME("LoopHandler");
+TimeCosters icp_costs_("icp_cost");
+TimeCosters sc_costs_("sc_cost");
+TimeCosters rk_costs_("rk_cost");
 LoopHandler::LoopHandler(float lidar_range, float scan_context_thres,
                          Mapmanager* mapMgr)
     : m_lidar_range(lidar_range),
@@ -32,7 +35,7 @@ LoopHandler::~LoopHandler() {
   delete m_ringkeys;
 }
 void LoopHandler::Run() {
-  SYLAR_LOG_INFO(g_logger_loop) << "--> START Loop Handler Thread.";
+  SYLAR_LOG_DEBUG(g_logger_loop) << "--> START Loop Handler Thread.";
   while (m_running) {
     LoopframePtr query_frame = nullptr;
     bool new_query = false;
@@ -85,16 +88,22 @@ void LoopHandler::Run() {
     // fast search by ringkey
     // 先用keyring进行初步筛选
     std::vector<int> ringkey_candidates;
+    auto t0 = TimeCosters::GetNow();
     search_ringkey(query_frame->m_ringkey, m_ringkeys, ringkey_candidates,new_query);
+    auto t1 = TimeCosters::GetNow();
+    GetRkCosts().addCost(t0, t1);
 
     // 候选帧不为空，搜索到候选帧
     if (!ringkey_candidates.empty()) {
       // search by ScanContext
       int matched_idx;
       float sc_diff;
+      auto t0 = TimeCosters::GetNow();
       // 找出候选关键帧中距离最小的
       search_sc(query_frame->m_signature, m_preocessed_lf, ringkey_candidates,
                 m_sc->getWidth(), matched_idx, sc_diff);
+              auto t1 = TimeCosters::GetNow();
+              GetScCosts().addCost(t0, t1);
       // 小于阈值表示检测到回环
       if (sc_diff < m_scan_context_thres) {
         // 获取找到的回环帧
@@ -110,9 +119,12 @@ void LoopHandler::Run() {
         bool icp_succ = false;
 
         Eigen::Matrix4d tfm_query_matched_icp = T_tf_icp.matrix();
+        t0 = TimeCosters::GetNow();
         icp_succ =
             icp(matched_frame->m_pts_spherical, query_frame->m_pts_spherical,
                 tfm_query_matched_icp, icp_error);
+                t1 = TimeCosters::GetNow();
+                GetIcpCosts().addCost(t0, t1);
         // tfm_query_matched_icp = matched_frame->m_twc.inverse().matrix() *
         // query_frame->m_twc.matrix() * tfm_query_matched_icp;
         T_tf_icp = ToOrthogonalTrans(tfm_query_matched_icp);
@@ -145,13 +157,13 @@ void LoopHandler::Run() {
       }
     }
   }
-  SYLAR_LOG_INFO(g_logger_loop) << "<-- END Loop Handler Thread.";
+  SYLAR_LOG_DEBUG(g_logger_loop) << "<-- END Loop Handler Thread.";
 }
 
 void LoopHandler::join() {
   m_running = false;
   m_main_thread->join();
-  SYLAR_LOG_INFO(g_logger_loop) << "Main Thread Join.";
+  SYLAR_LOG_DEBUG(g_logger_loop) << "Main Thread Join.";
 }
 void LoopHandler::close() { join(); }
 void LoopHandler::pushLoopframe2Buf(LoopframePtr lf) {

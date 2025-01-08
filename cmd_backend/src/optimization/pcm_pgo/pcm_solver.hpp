@@ -39,7 +39,7 @@ class PcmSolver {
 
   void Stop();
 
-//   void Run();
+  //   void Run();
 
   void ceresSim3Optimize(std::vector<FactorGraph>& full_fgs,
                          std::vector<Sim3LoopframeValue>& full_values,
@@ -49,7 +49,8 @@ class PcmSolver {
       const std::vector<bool>& need_optimize_idx,
       const std::vector<Sim3LoopframeValue>& sim3_values);
 
-  bool checkIsOptimized(std::vector<LoopframeValue>& values,std::vector<FactorGraph>& fgs);
+  bool checkIsOptimized(std::vector<LoopframeValue>& values,
+                        std::vector<FactorGraph>& fgs);
 
   bool checkFactorBufferWithLock(LoopEdgeVector& les);
 

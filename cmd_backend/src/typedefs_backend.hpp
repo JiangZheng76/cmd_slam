@@ -20,7 +20,7 @@
 #define ICP_ITERA_TIME 50
 #define ICP_TRANS_EPSILON 0.01
 #define ICP_EUC_EPSILON 0.001
-// #define ICP_THRES 1.5 
+// #define ICP_THRES 1.5
 #define ICP_THRES 2.0
 
 // optimization
@@ -47,7 +47,7 @@
 // the rotation estimated by DSO is much more accurate than translation
 #define POSE_R_WEIGHT 1e4
 
-// loop handler 
+// loop handler
 #define LOOPHANDLER_THRES 70
 
 namespace cmd {
@@ -55,17 +55,65 @@ inline bool debug() {
   static bool debug_ = true;
   return debug_;
 }
-} // namespace cmd
-// logger
-namespace cmd  {
-using namespace mysylar;
-// extern LoggerPtr g_logger_backend;
-// extern LoggerPtr g_logger_map;
-// extern LoggerPtr g_logger_comm;
-// extern LoggerPtr g_logger_loop;
-// extern LoggerPtr g_logger_solver;
-// extern LoggerPtr g_logger_viewer;
-}
+}  // namespace cmd
+
+namespace cmd {
+
+class TimeCosters : std::list<double> {
+ private:
+  std::string name_ = "";
+  std::string unit_ = "ms";
+
+ public:
+  using Timepoint = std::chrono::_V2::steady_clock::time_point;
+  TimeCosters(const std::string& name) { name_ = name; }
+  void addCost(double cost) { push_back(cost); }
+  void addCost(Timepoint start, Timepoint end) {
+    /**
+     * s : second
+     * ms : millisecond
+     * us : microsecond
+     * ns : nanosecond
+     */
+    unit_ = "ms";
+    using second_type = std::chrono::milliseconds;
+    double duration =
+        std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+    duration /= 1000;
+    addCost(duration);
+  }
+  std::string Dump() {
+    double len = size();
+    double max = 0, min = INT_MAX, sum = 0;
+    double average;
+    for (auto cost : *this) {
+      sum += cost;
+      if (cost > max) max = cost;
+      if (cost < min) min = cost;
+    }
+    average = sum / len;
+    std::stringstream ss;
+    ss << name_ << " size:" << len << "[max:" << max << unit_ << ", min:" << min
+       << unit_ << ", sum:" << sum << unit_ << ", average:" << average << unit_
+       << "] ";
+    return ss.str();
+  }
+  static Timepoint GetNow() { return std::chrono::steady_clock::now(); }
+};
+extern TimeCosters pp_costs_;  // point prepare
+inline TimeCosters& GetPpCosts() { return pp_costs_; }
+extern TimeCosters sc_costs_;
+inline TimeCosters& GetScCosts() { return sc_costs_; }
+extern TimeCosters icp_costs_;
+inline TimeCosters& GetIcpCosts() { return icp_costs_; }
+extern TimeCosters rk_costs_;
+inline TimeCosters& GetRkCosts() { return rk_costs_; }
+extern TimeCosters pgo_costs_;
+inline TimeCosters& GetPgoCosts() { return pgo_costs_; }
+extern TimeCosters pcm_costs_;
+inline TimeCosters& GetPcmCosts() { return pcm_costs_; }
+
+}  // namespace cmd
 
 namespace cmd {
 
@@ -136,7 +184,7 @@ using VecSim3 = Eigen::Matrix<double, 7, 1>;
 namespace cmd {
 // display color
 const std::vector<std::vector<precision_t>> col_vec = {
-    {0.678, 0.847, 0.9}, {0.902, 0.902, 0.98}, {0.941, 0.502, 0.502},
+    {0.678, 0.847, 0.9},   {0.902, 0.902, 0.98},  {0.941, 0.502, 0.502},
     {0.941, 0.902, 0.549}, {0.827, 0.709, 0.878}, {0.647, 0.165, 0.165},
     {0.70, 0.87, 0.41}};
 }  // namespace cmd

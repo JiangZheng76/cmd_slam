@@ -6,6 +6,8 @@
 
 namespace cmd {
 static LoggerPtr g_logger_solver = SYLAR_LOG_NAME("Solver");
+TimeCosters pcm_costs_("pcm_cost");
+TimeCosters pgo_costs_("pgo_cost");
 PcmSolver::PcmSolver(RobustSolverParams params) {
   solver_running_ = true;
   optimizing_ = false;
@@ -143,16 +145,19 @@ bool PcmSolver::removeOutlierAndOptimize(
 
   {
     MutexType::Lock lk(mutex_);
+    auto t0 = TimeCosters::GetNow();
     do_optimize = outlier_removal_->removeOutliers(factors, values, &nfg_,
                                                    &values_, last_client_value_,
                                                    &need_optimize_idx);
+    auto t1 = TimeCosters::GetNow();
+    GetPcmCosts().addCost(t0, t1);
   }
 
   // 唤醒优化
   if (do_optimize) {
-    SYLAR_LOG_INFO(g_logger_solver) << "--> RPGO" << "\e[1;32m START \e[0m";
+    SYLAR_LOG_INFO(g_logger_solver) << "=== RPGO" << "\e[1;32m START \e[0m ===";
     optimize(need_optimize_idx, optimized_values);
-    SYLAR_LOG_INFO(g_logger_solver) << "<-- RPGO" << "\e[1;33m END \e[0m";
+    SYLAR_LOG_INFO(g_logger_solver) << "=== RPGO" << "\e[1;33m END \e[0m ===";
   }
   return do_optimize;
 }
@@ -245,7 +250,8 @@ void PcmSolver::ceresSim3Optimize(std::vector<FactorGraph> &full_fgs,
     auto fix_pose = full_value[fix_key];
     // 添加边
     ceres::LossFunctionWrapper *loss_function = new ceres::LossFunctionWrapper(
-        new ceres::CauchyLoss(OPT_ROBUST_LOSS),  // CauchyLoss参数越小对于约束越严格
+        new ceres::CauchyLoss(
+            OPT_ROBUST_LOSS),  // CauchyLoss参数越小对于约束越严格
         ceres::
             TAKE_OWNERSHIP);  // 核函数
                               // TAKE_OWNERSHIP是否自动释放CauchyLoss等这些资源
@@ -315,7 +321,10 @@ void PcmSolver::optimize(std::vector<bool> &need_optimize_idx,
       }
     }
   }
+  auto t0 = TimeCosters::GetNow();
   ceresSim3Optimize(full_fgs, optimized_values, need_optimize_idx);
+  auto t1 = TimeCosters::GetNow();
+  GetPgoCosts().addCost(t0, t1);
 }
 /// @brief 检查是否启动优化
 /// @return
