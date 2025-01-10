@@ -52,3 +52,7 @@
 - git:
     local-name: opencv3_catkin
     uri:  https://github.com/ethz-asl/opencv3_catkin.git
+
+- git:
+    local-name: eigen
+    uri:  https://github.com/PX4/eigen.git

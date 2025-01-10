@@ -25,6 +25,7 @@ RUN apt-get update && apt-get install -y git \
     wget \
     libboost-all-dev \
     libflann-dev
+RUN  apt-get install -y libeigen3-dev
     
 RUN pip3 install -U catkin-tools
 # ---------------------------------------------------------------------------------------------------------

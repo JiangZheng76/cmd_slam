@@ -10,6 +10,12 @@ create_build_dir() {
 WS=/root/cmd_ws
 echo $WS
 
+# 更新 cmake 
+cd $WS/src
+cd cmake-3.22.0
+./bootstrap
+
+
 # wstool
 cd $WS/src
 wstool init
@@ -43,13 +49,4 @@ create_build_dir && cd build  && cmake .. && make -j && sudo make install
 # mysylar
 cd $WS/src/cmd_slam/cmd_comm/thrid-party/mysylar
 create_build_dir && cd build  && cmake .. && make -j
-
-cd $WS/src && source /opt/ros/melodic/setup.bash
-catkin build cmd_backend
-
-cd $CMD_WS/src/frontend_dsv_slam
-bash install.zsh
-
-echo "source /root/cmd_ws/devel/setup.bash"  > ~/.bashrc
-source ~/.bashrc
 

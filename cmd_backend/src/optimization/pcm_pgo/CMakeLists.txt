@@ -20,6 +20,7 @@ add_library(pcm_solver
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/max_clique_finder)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/utils)
+add_compile_definitions(GLOG_USE_GLOG_EXPORT)
 
 set(PCM_LIBS
     rpgo_max_clique
