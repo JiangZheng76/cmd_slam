@@ -14,7 +14,6 @@
 #include "loopframe.hpp"
 #include "optimization/pcm_pgo/utils/GeometryUtils.h"
 #include "optimization/pcm_pgo/utils/GraphUtils.h"
-// #include "optimization/pose_average.hpp"
 
 namespace cmd {
 static LoggerPtr g_logger_solver = SYLAR_LOG_NAME("Solver");

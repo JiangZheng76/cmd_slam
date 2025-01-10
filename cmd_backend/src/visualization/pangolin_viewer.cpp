@@ -226,7 +226,25 @@ void PangolinViewer::Run() {
   saveTumTrajectory("Trajectory");
   exit(1);
 }
+bool mkdirParentFile(const std::string &filename) {
+  char buff[FILENAME_MAX];
+  getcwd(buff, sizeof(buff));
+  std::string parent_path(buff);
+  parent_path += "/" + filename;
+  struct stat st1;
+  if (!(stat(parent_path.c_str(), &st1) == 0 && S_ISDIR(st1.st_mode))) {
+    int parent_result = mkdir(parent_path.c_str(), 0777);
+    if (parent_result == -1) {
+      SYLAR_LOG_ERROR(g_logger_viewer) << "mkdir " << parent_path << " failed";
+      return false;
+    }
+  }
+  return true;
+}
 void PangolinViewer::saveKittiTrajectory(const std::string &filename) {
+  if (!mkdirParentFile(filename)) {
+    return;
+  }
   char buff[FILENAME_MAX];
   getcwd(buff, sizeof(buff));
   std::string save_path(buff);
@@ -268,6 +286,9 @@ void PangolinViewer::saveKittiTrajectory(const std::string &filename) {
 }
 
 void PangolinViewer::saveTumTrajectory(const std::string &filename) {
+  if (!mkdirParentFile(filename)) {
+    return;
+  }
   char buff[FILENAME_MAX];
   getcwd(buff, sizeof(buff));
   std::string save_path(buff);
@@ -277,7 +298,7 @@ void PangolinViewer::saveTumTrajectory(const std::string &filename) {
   if (!(stat(save_path.c_str(), &st) == 0 && S_ISDIR(st.st_mode))) {
     int result = mkdir(save_path.c_str(), 0777);
     if (result == -1) {
-      SYLAR_LOG_INFO(g_logger_viewer) << "mkdir " << save_path << " failed";
+      SYLAR_LOG_ERROR(g_logger_viewer) << "mkdir " << save_path << " failed";
       return;
     }
   }
@@ -295,9 +316,9 @@ void PangolinViewer::saveTumTrajectory(const std::string &filename) {
       auto quat = Eigen::Quaterniond(lf->m_Twc.rotationMatrix());
       auto trans = lf->m_Twc.translation();
       // 保存格式为 tum 格式
-      file_stream << lf->m_timestamp << " " << trans(0) << " " << trans(1)  << " "
-                  << trans(2)  << " " << quat.x() << " " << quat.y() << " "
-                  << quat.z() << " " << quat.w() << std::endl;
+      file_stream << lf->m_timestamp << " " << trans(0) << " " << trans(1)
+                  << " " << trans(2) << " " << quat.x() << " " << quat.y()
+                  << " " << quat.z() << " " << quat.w() << std::endl;
     }
     file_stream.close();
     SYLAR_LOG_INFO(g_logger_viewer)

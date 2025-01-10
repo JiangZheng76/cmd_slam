@@ -31,11 +31,11 @@ LoopHandler::LoopHandler(float lidar_range, float scan_context_thres,
 LoopHandler::~LoopHandler() {
   m_running = false;
   m_main_thread->join();
-  SYLAR_LOG_INFO(g_logger_loop) << " --- join Loop Thread. --- ";
+  SYLAR_LOG_INFO(g_logger_loop) << "--- join Loop Thread. --- ";
   delete m_ringkeys;
 }
 void LoopHandler::Run() {
-  SYLAR_LOG_DEBUG(g_logger_loop) << "--> START Loop Handler Thread.";
+  SYLAR_LOG_DEBUG(g_logger_loop) << "+++ START Loop Handler Thread +++";
   while (m_running) {
     LoopframePtr query_frame = nullptr;
     bool new_query = false;

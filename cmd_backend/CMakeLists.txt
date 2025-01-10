@@ -3,8 +3,8 @@ project(cmd_backend)
 cmake_policy(SET CMP0048 NEW)
 
 if(NOT CMAKE_BUILD_TYPE)
-#   set(CMAKE_BUILD_TYPE RelWithDebInfo)
-  set(CMAKE_BUILD_TYPE Debug)
+  set(CMAKE_BUILD_TYPE Release)
+#   set(CMAKE_BUILD_TYPE Debug)
 endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native")
@@ -80,6 +80,6 @@ set(BACKEND_SOURCE_FILES
 
 # cs_add_library(cmd_backend ${BACKEND_SOURCE_FILES})
 # target_link_libraries(cmd_backend ${LIBS} )
-
+link_libraries("/usr/lib/x86_64-linux-gnu/libtbb.so.2")
 cs_add_executable(cmd_backend_node cmd_sys/cmd_backend_node.cpp ${BACKEND_SOURCE_FILES})
 target_link_libraries(cmd_backend_node ${LIBS})

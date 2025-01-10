@@ -136,7 +136,7 @@ bool Mapmanager::checkNewFrameBuf(LoopframeList &lfs) {
   return true;
 }
 void Mapmanager::Run() {
-  SYLAR_LOG_DEBUG(g_logger_map) << "--> START map manager ";
+  SYLAR_LOG_DEBUG(g_logger_map) << "+++ START map manager +++";
   while (m_runing) {
     LoopframeList lfs;
     if (checkNewFrameBuf(lfs)) {
@@ -148,7 +148,7 @@ void Mapmanager::Run() {
     }
     usleep(50);
   }
-  SYLAR_LOG_INFO(g_logger_map) << "<-- END map manager ";
+  SYLAR_LOG_INFO(g_logger_map) << "--- END map manager ---";
   SYLAR_LOG_INFO(g_logger_map)
       << "\n*************** cmd backend Time(ms) ***************\n"
       << GetPpCosts().Dump() << "\n"
@@ -160,7 +160,7 @@ void Mapmanager::Run() {
       << "****************************************************";
 }
 void Mapmanager::OptimizeRun() {
-  SYLAR_LOG_DEBUG(g_logger_map) << "--> OPT START";
+  SYLAR_LOG_DEBUG(g_logger_map) << "+++ OPT START +++";
   while (optimize_running_) {
     FactorGraph new_factors;
     LoopframeValue new_vals;  // [key,twc]
@@ -191,7 +191,7 @@ void Mapmanager::OptimizeRun() {
     };
     usleep(5000);  // 避免密集优化
   }
-  SYLAR_LOG_INFO(g_logger_map) << "<-- OPT thread is end.";
+  SYLAR_LOG_INFO(g_logger_map) << "--- OPT thread is end ---";
 }
 void Mapmanager::checkOptimizeAndViewUpdate() {
   std::vector<LoopframeValue> full_values;
