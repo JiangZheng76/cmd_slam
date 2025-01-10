@@ -1,0 +1,246 @@
+{
+	"archive" : {},
+	"artifacts" : 
+	[
+		{
+			"path" : "devel/lib/librpgo_max_clique.a"
+		}
+	],
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"include_directories",
+			"catkin_simple",
+			"include",
+			"find_external_library",
+			"find_package",
+			"target_include_directories"
+		],
+		"files" : 
+		[
+			"src/optimization/pcm_pgo/max_clique_finder/CMakeLists.txt",
+			"/home/sysu/cmd_ws/devel/share/catkin_simple/cmake/catkin_simple-extras.cmake",
+			"CMakeLists.txt",
+			"/usr/lib/cmake/vtk-7.1/UseVTK.cmake",
+			"/usr/local/share/pcl-1.13/PCLConfig.cmake",
+			"src/optimization/pcm_pgo/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 1,
+				"parent" : 0
+			},
+			{
+				"file" : 2
+			},
+			{
+				"command" : 2,
+				"file" : 2,
+				"line" : 15,
+				"parent" : 2
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 57,
+				"parent" : 3
+			},
+			{
+				"command" : 5,
+				"file" : 2,
+				"line" : 28,
+				"parent" : 2
+			},
+			{
+				"file" : 4,
+				"parent" : 5
+			},
+			{
+				"command" : 4,
+				"file" : 4,
+				"line" : 535,
+				"parent" : 6
+			},
+			{
+				"command" : 3,
+				"file" : 4,
+				"line" : 338,
+				"parent" : 7
+			},
+			{
+				"file" : 3,
+				"parent" : 8
+			},
+			{
+				"command" : 1,
+				"file" : 3,
+				"line" : 26,
+				"parent" : 9
+			},
+			{
+				"file" : 5
+			},
+			{
+				"command" : 1,
+				"file" : 5,
+				"line" : 11,
+				"parent" : 11
+			},
+			{
+				"command" : 6,
+				"file" : 0,
+				"line" : 7,
+				"parent" : 0
+			}
+		]
+	},
+	"compileGroups" : 
+	[
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"fragment" : " -std=c++17 -march=native  -g -fPIC"
+				},
+				{
+					"fragment" : "-std=gnu++1z"
+				}
+			],
+			"defines" : 
+			[
+				{
+					"define" : "ROSCONSOLE_BACKEND_LOG4CXX"
+				},
+				{
+					"define" : "ROS_BUILD_SHARED_LIBS=1"
+				},
+				{
+					"define" : "ROS_PACKAGE_NAME=\"cmd_backend\""
+				},
+				{
+					"define" : "vtkRenderingContext2D_AUTOINIT=1(vtkRenderingContextOpenGL2)"
+				},
+				{
+					"define" : "vtkRenderingCore_AUTOINIT=3(vtkInteractionStyle,vtkRenderingFreeType,vtkRenderingOpenGL2)"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 4,
+					"path" : "/home/sysu/cmd_ws/src/cmd-slam/cmd_comm/src"
+				},
+				{
+					"backtrace" : 4,
+					"path" : "/home/sysu/cmd_ws/src/cmd-slam/cmd_comm/thrid-party/mysylar/mysylar"
+				},
+				{
+					"backtrace" : 4,
+					"path" : "/home/sysu/cmd_ws/src/cmd-slam/cmd_comm/thrid-party/cereal/include"
+				},
+				{
+					"backtrace" : 4,
+					"path" : "/opt/ros/noetic/include"
+				},
+				{
+					"backtrace" : 4,
+					"path" : "/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp"
+				},
+				{
+					"backtrace" : 10,
+					"path" : "/usr/include/vtk-7.1"
+				},
+				{
+					"backtrace" : 10,
+					"path" : "/usr/include/freetype2"
+				},
+				{
+					"backtrace" : 12,
+					"path" : "/home/sysu/gtsam"
+				},
+				{
+					"backtrace" : 12,
+					"path" : "/home/sysu/cmd_ws/src/cmd-slam/cmd_backend/src"
+				},
+				{
+					"backtrace" : 13,
+					"path" : "/home/sysu/cmd_ws/src/cmd-slam/cmd_backend/src/optimization/pcm_pgo/include"
+				}
+			],
+			"language" : "CXX",
+			"languageStandard" : 
+			{
+				"backtraces" : 
+				[
+					1
+				],
+				"standard" : "17"
+			},
+			"sourceIndexes" : 
+			[
+				0,
+				1,
+				2,
+				3
+			]
+		}
+	],
+	"id" : "rpgo_max_clique::@62fd560b61d1cfe99930",
+	"name" : "rpgo_max_clique",
+	"nameOnDisk" : "librpgo_max_clique.a",
+	"paths" : 
+	{
+		"build" : "src/optimization/pcm_pgo/max_clique_finder",
+		"source" : "src/optimization/pcm_pgo/max_clique_finder"
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Source Files",
+			"sourceIndexes" : 
+			[
+				0,
+				1,
+				2,
+				3
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "src/optimization/pcm_pgo/max_clique_finder/findClique.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "src/optimization/pcm_pgo/max_clique_finder/findCliqueHeu.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "src/optimization/pcm_pgo/max_clique_finder/graphIO.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "src/optimization/pcm_pgo/max_clique_finder/utils.cpp",
+			"sourceGroupIndex" : 0
+		}
+	],
+	"type" : "STATIC_LIBRARY"
+}
