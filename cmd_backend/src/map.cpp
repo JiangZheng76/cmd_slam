@@ -98,9 +98,6 @@ void Framemanager::dump() {
 void Framemanager::showResult() {
   // TODO
 }
-void Framemanager::saveTrajectory(const std::string &save_path) {
-  // TODO
-}
 
 Mapmanager::Mapmanager(PangolinViewerPtr viewer) : viewer_(viewer) {
   RobustSolverParams params;

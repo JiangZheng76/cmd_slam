@@ -10,18 +10,19 @@
 #include "cmd_comm.hpp"
 #include "utils.hpp"
 
-#define DISTANCE_THRES 35.0
+#define DISTANCE_THRES 35.0 
+#define ID_DISTANCE_THRES 80
 // loop closure
 #define LIDAR_RANGE 40.0
-// #define SCANCONTEXT_THRES 0.33
-#define SCANCONTEXT_THRES 0.40
+#define SCANCONTEXT_THRES 0.33
+// #define SCANCONTEXT_THRES 0.40
 
 // icp
 #define ICP_ITERA_TIME 50
 #define ICP_TRANS_EPSILON 0.01
 #define ICP_EUC_EPSILON 0.001
 // #define ICP_THRES 1.5
-#define ICP_THRES 2.0
+#define ICP_THRES 1.7
 
 // optimization
 #define OPT_ROBUST_LOSS 1.0

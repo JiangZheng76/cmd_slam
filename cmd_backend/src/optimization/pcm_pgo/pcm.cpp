@@ -514,6 +514,13 @@ TransMatrixType Pcm::gncRobustPoseAveraging(
   TransMatrixType result(estimate.at<gtsam::Pose3>(0).matrix());
   return result;
 }
+bool isFarEnough(LoopEdge & factor){
+    auto prev = factor.m_from_lf;
+    auto cur = factor.m_to_lf;
+    auto prev_id = prev->m_lf_id;
+    auto cur_id = cur->m_lf_id;
+    return prev_id + ID_DISTANCE_THRES <= cur_id;
+}
 
 void Pcm::parseAndIncrementAdjMatrix(
     FactorGraph &factors, std::vector<LoopframeValue> &output_value,
@@ -540,7 +547,7 @@ void Pcm::parseAndIncrementAdjMatrix(
     double dist;
     if (from_client == to_client) {
       // 检查新的同一robot回环是否与先验位姿具有一致性
-      is_valid = isOdomConsistent(new_factor, dist);
+      is_valid = isOdomConsistent(new_factor, dist) && isFarEnough(new_factor);
     } else {
       is_valid = true;
     }
@@ -776,9 +783,19 @@ bool Pcm::isOdomConsistent(LoopEdge &factor, double &dist) {
 }
 
 bool Pcm::checkOdomConsistent(TransMatrixType &trans, double &dist) {
-  double rot_dist = trans.rotationMatrix().norm();
+  // double rot_dist = trans.rotationMatrix().norm();
   dist = trans.translation().norm();
-
+  auto R = trans.rotationMatrix();
+  double trace = R.trace();
+  // 计算旋转角度θ
+  double theta = std::acos((trace - 1) / 2);
+  double rot_dist = theta;
+  if (debug()) {
+    SYLAR_LOG_DEBUG(g_logger_solver)
+        << "odom_trans_threshold:" << params_.odom_trans_threshold
+        << ",odom_rot_threshold:" << params_.odom_rot_threshold
+        << ",trans_dist:" << dist << ",rot_dist:" << rot_dist;
+  }
   if (dist < params_.odom_trans_threshold &&
       rot_dist < params_.odom_rot_threshold) {
     return true;

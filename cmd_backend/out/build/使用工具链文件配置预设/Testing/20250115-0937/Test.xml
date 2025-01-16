@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Site BuildName="(empty)"
+	BuildStamp="20250115-0937-Experimental"
+	Name="sysu-Lenovo-Legion"
+	Generator="ctest-3.22.0"
+	CompilerName="/usr/bin/c++"
+	CompilerVersion="9.4.0"
+	OSName="Linux"
+	Hostname="sysu-Lenovo-Legion"
+	OSRelease="5.15.0-130-generic"
+	OSVersion="#140~20.04.1-Ubuntu SMP Wed Dec 18 21:35:34 UTC 2024"
+	OSPlatform="x86_64"
+	Is64Bits="1"
+	VendorString="AuthenticAMD"
+	VendorID="Advanced Micro Devices"
+	FamilyID="25"
+	ModelID="80"
+	ProcessorCacheSize="512"
+	NumberOfLogicalCPU="16"
+	NumberOfPhysicalCPU="8"
+	TotalVirtualMemory="34398"
+	TotalPhysicalMemory="64150"
+	LogicalProcessorsPerPhysical="2"
+	ProcessorClockFrequency="1200"
+	>
+	<Testing>
+		<StartDateTime>Jan 15 17:37 CST</StartDateTime>
+		<StartTestTime>1736933820</StartTestTime>
+		<TestList/>
+		<EndDateTime>Jan 15 17:37 CST</EndDateTime>
+		<EndTestTime>1736933820</EndTestTime>
+		<ElapsedMinutes>0</ElapsedMinutes>
+	</Testing>
+</Site>

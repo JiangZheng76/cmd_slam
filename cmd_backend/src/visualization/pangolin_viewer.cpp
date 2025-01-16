@@ -274,7 +274,7 @@ void PangolinViewer::saveKittiTrajectory(const std::string &filename) {
       // 保存格式为 kitti 格式
       for (int i = 0; i < rows - 1; i++) {
         for (int j = 0; j < cols; j++) {
-          file_stream << Twc(j, i) << " ";
+          file_stream << std::fixed << Twc(j, i) << " ";
         }
       }
       file_stream << std::endl;
@@ -316,9 +316,10 @@ void PangolinViewer::saveTumTrajectory(const std::string &filename) {
       auto quat = Eigen::Quaterniond(lf->m_Twc.rotationMatrix());
       auto trans = lf->m_Twc.translation();
       // 保存格式为 tum 格式
-      file_stream << lf->m_timestamp << " " << trans(0) << " " << trans(1)
-                  << " " << trans(2) << " " << quat.x() << " " << quat.y()
-                  << " " << quat.z() << " " << quat.w() << std::endl;
+      file_stream << std::fixed << lf->m_timestamp << " " << trans(0) << " "
+                  << trans(1) << " " << trans(2) << " " << quat.x() << " "
+                  << quat.y() << " " << quat.z() << " " << quat.w()
+                  << std::endl;
     }
     file_stream.close();
     SYLAR_LOG_INFO(g_logger_viewer)

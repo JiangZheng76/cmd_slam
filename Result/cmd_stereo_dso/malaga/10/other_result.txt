@@ -1,0 +1,32 @@
+*************** cmd backend Time(ms) ***************
+pp_cost size:2930[max:8.791ms, min:0.055ms, sum:1084.93ms, average:0.370283ms] 
+sc_cost size:5098[max:0.076ms, min:0.002ms, sum:56.594ms, average:0.0111012ms] 
+icp_cost size:2908[max:63.013ms, min:0.893ms, sum:21772.4ms, average:7.48707ms] 
+rk_cost size:5791[max:6.329ms, min:0ms, sum:459.277ms, average:0.0793088ms] 
+pgo_cost size:285[max:1245.45ms, min:0.001ms, sum:181698ms, average:637.535ms] 
+pcm_cost size:462[max:371.213ms, min:1.497ms, sum:20475.7ms, average:44.3197ms] 
+****************************************************
+
+------- selectserver: [client:1] hung up. -------
+during time: 407s
+send bytes: 0KB
+send rate: 0KB/s
+recv bytes: 14267KB
+recv rate: 35.0541KB/s
+-------------------------------------------------
+
+------- selectserver: [client:2] hung up. -------
+during time: 408s
+send bytes: 0KB
+send rate: 0KB/s
+recv bytes: 11871KB
+recv rate: 29.0956KB/s
+-------------------------------------------------
+
+------- selectserver: [client:3] hung up. -------
+during time: 408s
+send bytes: 0KB
+send rate: 0KB/s
+recv bytes: 10847KB
+recv rate: 26.5858KB/s
+-------------------------------------------------

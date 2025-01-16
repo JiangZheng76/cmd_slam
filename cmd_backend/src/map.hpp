@@ -43,7 +43,6 @@ class Framemanager {
 
   void dump();
   void showResult();
-  void saveTrajectory(const std::string &save_path);
 
  private:
   void genImiLidarScan(LoopframePtr lf);
