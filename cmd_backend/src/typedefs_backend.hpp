@@ -30,7 +30,7 @@
 #define OPT_ITER 50  // 迭代次数
 
 // Comm
-#define COMM_IP "10.0.0.10"
+#define COMM_IP "10.0.0.21"
 #define COMM_PORT "8888"
 
 // viewer
