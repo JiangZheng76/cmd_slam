@@ -1,5 +1,6 @@
 #include "loop_handler.hpp"
 
+#include "TimeRecord/TimeRecord.hpp"
 #include "loop_closure/icp.h"
 #include "loop_closure/scancontext.hpp"
 #include "loop_closure/search_place.h"
@@ -7,9 +8,6 @@
 
 namespace cmd {
 static LoggerPtr g_logger_loop = SYLAR_LOG_NAME("LoopHandler");
-TimeCosters icp_costs_("icp_cost");
-TimeCosters sc_costs_("sc_cost");
-TimeCosters rk_costs_("rk_cost");
 LoopHandler::LoopHandler(float lidar_range, float scan_context_thres,
                          Mapmanager* mapMgr)
     : m_lidar_range(lidar_range),
@@ -40,8 +38,9 @@ void LoopHandler::Run() {
     LoopframePtr query_frame = nullptr;
     bool new_query = false;
     {
-      if (m_requery_lfs_.size() < LOOPHANDLER_THRES) { // 每隔 70 就会重新检测一次 
-      // !!! 有问题，影响回环检测，Scancontext 里面需要添加约束
+      if (m_requery_lfs_.size() <
+          LOOPHANDLER_THRES) {  // 每隔 70 就会重新检测一次
+        // !!! 有问题，影响回环检测，Scancontext 里面需要添加约束
         if (m_buf_lfs.empty()) {
           usleep(100);
           continue;
@@ -52,7 +51,7 @@ void LoopHandler::Run() {
         m_buf_lfs.pop_front();
         m_requery_lfs_.push_back(query_frame);
         m_preocessed_lf.push_back(query_frame);
-      }else {       
+      } else {
         query_frame = m_requery_lfs_.front();
         m_requery_lfs_.pop_front();
         new_query = false;
@@ -74,8 +73,11 @@ void LoopHandler::Run() {
     SigType signature;                                      // sc的签名
     Eigen::Matrix4d tfm_pca_rig = EigenMatrix::Identity();  // pca对齐矩阵
 
-    m_sc->generate(query_frame->m_pts_spherical, ringkey, signature,
-                   m_lidar_range, tfm_pca_rig);
+    {
+      TimeRecord rt(&generate_sc_costs);
+      m_sc->generate(query_frame->m_pts_spherical, ringkey, signature,
+                     m_lidar_range, tfm_pca_rig);
+    }
 
     query_frame->m_t_pca_rig = ToOrthogonalTrans(tfm_pca_rig);
     query_frame->m_signature = signature;
@@ -88,22 +90,23 @@ void LoopHandler::Run() {
     // fast search by ringkey
     // 先用keyring进行初步筛选
     std::vector<int> ringkey_candidates;
-    auto t0 = TimeCosters::GetNow();
-    search_ringkey(query_frame->m_ringkey, m_ringkeys, ringkey_candidates,new_query);
-    auto t1 = TimeCosters::GetNow();
-    GetRkCosts().addCost(t0, t1);
+    {
+      TimeRecord rt(&ring_key_costs);
+      search_ringkey(query_frame->m_ringkey, m_ringkeys, ringkey_candidates,
+                     new_query);
+    }
 
     // 候选帧不为空，搜索到候选帧
     if (!ringkey_candidates.empty()) {
       // search by ScanContext
       int matched_idx;
       float sc_diff;
-      auto t0 = TimeCosters::GetNow();
-      // 找出候选关键帧中距离最小的
-      search_sc(query_frame->m_signature, m_preocessed_lf, ringkey_candidates,
-                m_sc->getWidth(), matched_idx, sc_diff);
-              auto t1 = TimeCosters::GetNow();
-              GetScCosts().addCost(t0, t1);
+      {
+        TimeRecord record(&scancontext_costs);
+        // 找出候选关键帧中距离最小的
+        search_sc(query_frame->m_signature, m_preocessed_lf, ringkey_candidates,
+                  m_sc->getWidth(), matched_idx, sc_diff);
+      }
       // 小于阈值表示检测到回环
       if (sc_diff < m_scan_context_thres) {
         // 获取找到的回环帧
@@ -119,12 +122,12 @@ void LoopHandler::Run() {
         bool icp_succ = false;
 
         Eigen::Matrix4d tfm_query_matched_icp = T_tf_icp.matrix();
-        t0 = TimeCosters::GetNow();
-        icp_succ =
-            icp(matched_frame->m_pts_spherical, query_frame->m_pts_spherical,
-                tfm_query_matched_icp, icp_error);
-                t1 = TimeCosters::GetNow();
-                GetIcpCosts().addCost(t0, t1);
+        {
+          TimeRecord ticp(&icp_costs);
+          icp_succ =
+              icp(matched_frame->m_pts_spherical, query_frame->m_pts_spherical,
+                  tfm_query_matched_icp, icp_error);
+        }
         // tfm_query_matched_icp = matched_frame->m_twc.inverse().matrix() *
         // query_frame->m_twc.matrix() * tfm_query_matched_icp;
         T_tf_icp = ToOrthogonalTrans(tfm_query_matched_icp);

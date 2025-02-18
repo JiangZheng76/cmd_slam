@@ -2,13 +2,12 @@
 
 #include <ceres/ceres.h>
 
+#include "TimeRecord/TimeRecord.hpp"
 #include "loopframe.hpp"
 #include "optimization/cmd_sim3.hpp"
 
 namespace cmd {
 static LoggerPtr g_logger_solver = SYLAR_LOG_NAME("Solver");
-TimeCosters pcm_costs_("pcm_cost");
-TimeCosters pgo_costs_("pgo_cost");
 PcmSolver::PcmSolver(RobustSolverParams params) {
   solver_running_ = true;
   optimizing_ = false;
@@ -146,12 +145,10 @@ bool PcmSolver::removeOutlierAndOptimize(
 
   {
     MutexType::Lock lk(mutex_);
-    auto t0 = TimeCosters::GetNow();
+    TimeRecord record(&pcm_costs);
     do_optimize = outlier_removal_->removeOutliers(factors, values, &nfg_,
                                                    &values_, last_client_value_,
                                                    &need_optimize_idx);
-    auto t1 = TimeCosters::GetNow();
-    GetPcmCosts().addCost(t0, t1);
   }
 
   // 唤醒优化
@@ -322,10 +319,10 @@ void PcmSolver::optimize(std::vector<bool> &need_optimize_idx,
       }
     }
   }
-  auto t0 = TimeCosters::GetNow();
-  ceresSim3Optimize(full_fgs, optimized_values, need_optimize_idx);
-  auto t1 = TimeCosters::GetNow();
-  GetPgoCosts().addCost(t0, t1);
+  {
+    TimeRecord record(&pgo_costs);
+    ceresSim3Optimize(full_fgs, optimized_values, need_optimize_idx);
+  }
 }
 /// @brief 检查是否启动优化
 /// @return

@@ -13,11 +13,12 @@ FrontEndComm::FrontEndComm(std::string ip, std::string port)
     SYLAR_ASSERT(false);
   }
   SocketPtr sock = Socket::CreateTCP(addr);
-  bool rt = sock->connect(addr);
-  if (!rt) {
-    SYLAR_LOG_ERROR(g_logger_frontend) << "connect error";
+  // bool rt = sock->connect(addr);
+  while (!sock->connect(addr)) {
+    SYLAR_LOG_WARN(g_logger_frontend) << "waiting for server...";
     sock->dump(std::cout);
-    SYLAR_ASSERT(false);
+    // SYLAR_ASSERT(false);
+    sleep(1);
   }
   // 重新绑定 socket_stream
   reset(sock, true);

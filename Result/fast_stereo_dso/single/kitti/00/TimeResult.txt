@@ -1,5 +1,5 @@
 ========================= cost result =========================
-left_selcetpoint_costs[average:1.87538ms][nums:4540],[min:1.569ms],[max:5.267ms]
-right_selcetpoint_costs[average:1.93267ms][nums:4540],[min:1.629ms],[max:5.329ms]
-tracking_costs[average:43.2453ms][nums:9080],[min:0.142ms],[max:266.95ms]
+left_selcetpoint_costs[average:2.06664ms][nums:4540],[min:1.625ms],[max:5.477ms]
+right_selcetpoint_costs[average:2.10394ms][nums:4540],[min:1.675ms],[max:5.567ms]
+tracking_costs[average:84.2607ms][nums:4540],[min:12.118ms],[max:273.005ms]
 ---------------------------------------------------------------

@@ -60,64 +60,6 @@ inline bool debug() {
 
 namespace cmd {
 
-class TimeCosters : std::list<double> {
- private:
-  std::string name_ = "";
-  std::string unit_ = "ms";
-
- public:
-  using Timepoint = std::chrono::_V2::steady_clock::time_point;
-  TimeCosters(const std::string& name) { name_ = name; }
-  void addCost(double cost) { push_back(cost); }
-  void addCost(Timepoint start, Timepoint end) {
-    /**
-     * s : second
-     * ms : millisecond
-     * us : microsecond
-     * ns : nanosecond
-     */
-    unit_ = "ms";
-    using second_type = std::chrono::milliseconds;
-    double duration =
-        std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-    duration /= 1000;
-    addCost(duration);
-  }
-  std::string Dump() {
-    double len = size();
-    double max = 0, min = INT_MAX, sum = 0;
-    double average;
-    for (auto cost : *this) {
-      sum += cost;
-      if (cost > max) max = cost;
-      if (cost < min) min = cost;
-    }
-    average = sum / len;
-    std::stringstream ss;
-    ss << name_ << " size:" << len << "[max:" << max << unit_ << ", min:" << min
-       << unit_ << ", sum:" << sum << unit_ << ", average:" << average << unit_
-       << "] ";
-    return ss.str();
-  }
-  static Timepoint GetNow() { return std::chrono::steady_clock::now(); }
-};
-extern TimeCosters pp_costs_;  // point prepare
-inline TimeCosters& GetPpCosts() { return pp_costs_; }
-extern TimeCosters sc_costs_;
-inline TimeCosters& GetScCosts() { return sc_costs_; }
-extern TimeCosters icp_costs_;
-inline TimeCosters& GetIcpCosts() { return icp_costs_; }
-extern TimeCosters rk_costs_;
-inline TimeCosters& GetRkCosts() { return rk_costs_; }
-extern TimeCosters pgo_costs_;
-inline TimeCosters& GetPgoCosts() { return pgo_costs_; }
-extern TimeCosters pcm_costs_;
-inline TimeCosters& GetPcmCosts() { return pcm_costs_; }
-
-}  // namespace cmd
-
-namespace cmd {
-
 class ScanContext;
 using ScanContextPtr = std::shared_ptr<ScanContext>;
 class LoopEdge;

@@ -1,0 +1,9 @@
+========================= cost result =========================
+point_preprocess_costs[average:0.238335ms][nums:1503],[min:0.069ms],[max:0.477ms]
+generate_sc_costs[average:0.0904808ms][nums:2937],[min:0.025ms],[max:0.203ms]
+ring_key_costs[average:0.0601668ms][nums:2937],[min:0ms],[max:1.961ms]
+scancontext_costs[average:0.0096127ms][nums:2551],[min:0.002ms],[max:0.037ms]
+icp_costs[average:3.86596ms][nums:236],[min:0.819ms],[max:16.203ms]
+pcm_costs[average:0.889931ms][nums:159],[min:0.06ms],[max:6.246ms]
+pgo_costs[average:152.132ms][nums:85],[min:51.565ms],[max:242.98ms]
+---------------------------------------------------------------

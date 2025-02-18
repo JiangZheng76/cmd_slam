@@ -8,10 +8,10 @@
 #include "loopframe.hpp"
 #include "typedefs_backend.hpp"
 #include "visualization/pangolin_viewer.hpp"
+#include "TimeRecord/TimeRecord.hpp"
 
 namespace cmd {
 static LoggerPtr g_logger_map = SYLAR_LOG_NAME("Map");
-TimeCosters pp_costs_("pp_cost");  // point prepare
 Framemanager::Framemanager(int client_id)
     : m_clientId(client_id), m_optimizing(false) {}
 void Framemanager::updateFramesFromCeres() {
@@ -84,11 +84,11 @@ void Framemanager::genImiLidarScan(LoopframePtr lf) {
 
     /* ============= Preprocess points to have sphereical shape ============= */
     m_id_pose_wc[cur_id] = Twc.log();
-    auto t0 = TimeCosters::GetNow();
-    generate_spherical_points(m_pts_nearby, m_id_pose_wc, Twc.inverse(),
-                              m_lidar_range, pts_spherical);
-    auto t1 = TimeCosters::GetNow();
-    GetPpCosts().addCost(t0, t1);
+    {
+      TimeRecord tr(&point_preprocess_costs);
+      generate_spherical_points(m_pts_nearby, m_id_pose_wc, Twc.inverse(),
+                          m_lidar_range, pts_spherical);
+    }
   }
   lf->m_pts_spherical = pts_spherical;
 }
@@ -146,15 +146,7 @@ void Mapmanager::Run() {
     usleep(50);
   }
   SYLAR_LOG_INFO(g_logger_map) << "--- END map manager ---";
-  SYLAR_LOG_INFO(g_logger_map)
-      << "\n*************** cmd backend Time(ms) ***************\n"
-      << GetPpCosts().Dump() << "\n"
-      << GetScCosts().Dump() << "\n"
-      << GetIcpCosts().Dump() << "\n"
-      << GetRkCosts().Dump() << "\n"
-      << GetPgoCosts().Dump() << "\n"
-      << GetPcmCosts().Dump() << "\n"
-      << "****************************************************";
+  SYLAR_LOG_INFO(g_logger_map) << ShowTimeCostsAndSaveLocal("backend_result.txt");
 }
 void Mapmanager::OptimizeRun() {
   SYLAR_LOG_DEBUG(g_logger_map) << "+++ OPT START +++";
