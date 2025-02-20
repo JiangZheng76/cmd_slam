@@ -146,6 +146,7 @@ void Mapmanager::Run() {
     usleep(50);
   }
   SYLAR_LOG_INFO(g_logger_map) << "--- END map manager ---";
+  viewer_->saveTumTrajectory("Trajectory");
   SYLAR_LOG_INFO(g_logger_map) << ShowTimeCostsAndSaveLocal("backend_result.txt");
 }
 void Mapmanager::OptimizeRun() {

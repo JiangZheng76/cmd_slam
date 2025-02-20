@@ -1,0 +1,13 @@
+========================= cost result =========================
+left_extract_orb_costs[average:19.5749ms][nums:10026],[min:12.738ms],[max:60.866ms]
+right_extract_orb_costs[average:19.509ms][nums:10026],[min:11.733ms],[max:64.546ms]
+left_bow_costs[average:7.11555ms][nums:2096],[min:4.446ms],[max:11.189ms]
+right_bow_costs[average:-nanms][nums:0],[min:2.14748e+09ms],[max:-2.14748e+09ms]
+extract_orb_costs[average:2.95353ms][nums:20052],[min:1.899ms],[max:23.344ms]
+keypoint_costs[average:15.2417ms][nums:20035],[min:8.82ms],[max:49.256ms]
+loop_detect_costs[average:14.6066ms][nums:2078],[min:2.058ms],[max:34.871ms]
+loop_estimate_costs[average:0.402479ms][nums:2003],[min:0.082ms],[max:1.547ms]
+pgo_costs[average:3376.95ms][nums:1],[min:3376.95ms],[max:3376.95ms]
+global_bundle_adjustment_costs[average:278721ms][nums:1],[min:278721ms],[max:278721ms]
+tracking_costs[average:57.3664ms][nums:10026],[min:36.001ms],[max:1000.42ms]
+---------------------------------------------------------------

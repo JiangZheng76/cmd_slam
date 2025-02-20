@@ -213,18 +213,19 @@ void PangolinViewer::Run() {
     drawLoopClosureFactor();
 
     // 画雷达点云图
-    // Visualization_lidar_display.Activate(Visualization_lidar_camera);
-    // for (auto &p : m_agent_displays) {
-    //   auto agent_display = p.second;
-    //   agent_display->drawLidar();
-    // }
+    Visualization_lidar_display.Activate(Visualization_lidar_camera);
+    for (auto &p : m_agent_displays) {
+      auto agent_display = p.second;
+      agent_display->drawLidar();
+    }
     // 画完递交画面
     pangolin::FinishFrame();
   }
   // 保存微位姿信息
-  saveKittiTrajectory("Trajectory");
-  saveTumTrajectory("Trajectory");
-  exit(1);
+  // std::cout << "save trajectory in pangolin...." << std::endl;
+  // saveKittiTrajectory("Trajectory");
+  // saveTumTrajectory("Trajectory");
+  // std::cout << "save trajectory end." << std::endl;
 }
 bool mkdirParentFile(const std::string &filename) {
   char buff[FILENAME_MAX];
@@ -235,6 +236,7 @@ bool mkdirParentFile(const std::string &filename) {
   if (!(stat(parent_path.c_str(), &st1) == 0 && S_ISDIR(st1.st_mode))) {
     int parent_result = mkdir(parent_path.c_str(), 0777);
     if (parent_result == -1) {
+      std::cout << "mkdirParentFile() mkdir " << parent_path << " failed" << std::endl;
       SYLAR_LOG_ERROR(g_logger_viewer) << "mkdir " << parent_path << " failed";
       return false;
     }
@@ -298,6 +300,7 @@ void PangolinViewer::saveTumTrajectory(const std::string &filename) {
   if (!(stat(save_path.c_str(), &st) == 0 && S_ISDIR(st.st_mode))) {
     int result = mkdir(save_path.c_str(), 0777);
     if (result == -1) {
+      std::cout << "mkdir " << save_path << " failed" << std::endl;
       SYLAR_LOG_ERROR(g_logger_viewer) << "mkdir " << save_path << " failed";
       return;
     }
@@ -307,7 +310,7 @@ void PangolinViewer::saveTumTrajectory(const std::string &filename) {
         save_path + "/" + std::to_string(client) + ".txt";
     std::ofstream file_stream(client_filename);
     if (!file_stream.is_open()) {
-      std::cerr << "Failed to open the file: " << client_filename << std::endl;
+      std::cout << "Failed to open the file: " << client_filename << std::endl;
       SYLAR_LOG_ERROR(g_logger_viewer)
           << "Failed to open the file: " << client_filename;
       break;
@@ -324,6 +327,7 @@ void PangolinViewer::saveTumTrajectory(const std::string &filename) {
     file_stream.close();
     SYLAR_LOG_INFO(g_logger_viewer)
         << "save tum trajectory to " << client_filename;
+    std::cout << "save tum trajectory to " << client_filename << std::endl;
   }
 }
 

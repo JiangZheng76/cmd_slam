@@ -1,0 +1,5 @@
+========================= cost result =========================
+left_selcetpoint_costs[average:0.863988ms][nums:4816],[min:0.658ms],[max:2.283ms]
+right_selcetpoint_costs[average:0.864972ms][nums:4816],[min:0.661ms],[max:2.363ms]
+tracking_costs[average:32.0591ms][nums:4816],[min:6.926ms],[max:229.602ms]
+---------------------------------------------------------------

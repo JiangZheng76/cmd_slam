@@ -39,7 +39,7 @@ void AgentDisplay::drawConstraints() {
   glEnd();
 }
 void AgentDisplay::drawLidar() {
-  glPointSize(3.0);
+  glPointSize(1.0);
 
   glBegin(GL_POINTS);
   for (size_t i = 0; i < m_lidar_pts.size(); i++) {

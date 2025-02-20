@@ -1,5 +1,5 @@
 #! /bin/bash
-seq_num="10"
+seq_num="09"
 gt=/home/sysu/cmd_ws/src/cmd-slam/Result/groundtruth/kitti
 result=/home/sysu/cmd_ws/src/cmd-slam/Result/fast_stereo_dso/single/kitti
 
