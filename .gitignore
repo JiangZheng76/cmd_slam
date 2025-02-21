@@ -1,6 +1,8 @@
-/build/
+build/
 out/
 Docker/
+lib/
+bin/
 
 % Ignore VS code settings
 .vscode
@@ -15,4 +17,3 @@ Docker/
 .so
 .a
 
-% vo/
