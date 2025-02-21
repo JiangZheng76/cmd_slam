@@ -1,0 +1,28 @@
+<launch>
+  <arg name="seqnum" default="06" />
+  <arg name="files_path" default="/media/sysu/Other/Dataset/Slam/malaga/sequences/$(arg seqnum)/" />
+  <arg name="bag_path" default="/media/sysu/Other/Dataset/Slam/malaga/sequences/$(arg seqnum)/" />
+  <!-- <arg name="files_path" default="/media/sysu/Other/Dataset/Slam/malaga/sequences/10/muti_robot/1/" /> -->
+  <!-- <arg name="bag_path" default="/media/sysu/Other/Dataset/Slam/malaga/sequences/10/muti_robot/1/" /> -->
+  <arg name="left_topic" default="/camera/left/image_raw" />
+  <arg name="right_topic" default="/camera/right/image_raw" />
+  <arg name="save_path" default="" />
+  <arg name="time" default="2" />
+  
+  <node name="backend" pkg="cmd_backend" type="cmd_backend_node" output="screen" required="true">
+  </node>
+
+  <node name="stereo_dso1" pkg="fast_stereo_dso" type="dso_dataset_ros" output="screen" required="true">
+    <param name="files" value="$(arg files_path)" />
+    <param name="bag" value="$(arg bag_path)/output.bag"/>
+    <param name="calib" value="$(find fast_stereo_dso)/calib/malaga/cam.txt" />
+    <param name="topic0" value="$(arg left_topic)" />
+    <param name="topic1" value="$(arg right_topic)" />
+    <param name="preset" value="0" />
+    <param name="mode" value="1" />
+    <param name="quiet" value="1" />
+    <param name="nomt" value="1" />
+    <param name="savepath" value="$(arg save_path)" />
+    <param name="sleep_time" value="$(arg time)" />
+  </node>
+</launch>

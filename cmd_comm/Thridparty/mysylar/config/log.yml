@@ -1,0 +1,38 @@
+logs:
+    - name: root
+      level: info
+      appenders:
+          - type: FileLogAppender
+            file: root.txt
+            formatter: '%d%T[%p]%T%m%T%n'
+            level: info
+          - type: StdoutLogAppender
+            formatter: '[%c]%T[%p]%T%d{%Y-%m-%d %H:%M:%S}%T%t%T%F%T<%f:%l>%T%m%T%n'
+            level: info
+    - name: system
+      level: info
+      appenders:
+          - type: FileLogAppender
+            file: system.txt
+            formatter: '%d%T[%p]%T%m%T%n'
+            level: info
+          - type: StdoutLogAppender
+            formatter: '[%c]%T[%p]%T%d{%Y-%m-%d %H:%M:%S}%T%t%T%F%T<%f:%l>%T%m%T%n'
+            level: info
+servers:
+    keepalive: 8081
+    timeout: 1000
+    vec:
+      - 30
+      - 50 
+    list: [20,30,40]
+    set: [20,30,30,40,60,60]
+    unordered_set: [20,20,30,40,40] 
+class:
+    person:
+      name: jiangzheng 
+      age: 22
+      sex: 1
+
+
+

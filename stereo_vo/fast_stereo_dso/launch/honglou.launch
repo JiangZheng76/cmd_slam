@@ -1,0 +1,20 @@
+<launch>
+  <arg name="files_path" default="/media/sysu/200GB_Other/Dataset/Slam/honglou" />
+  <arg name="bag_path" default="/media/sysu/200GB_Other/Dataset/Slam/honglou" />
+  <arg name="calib_path"
+    default="$(find cmd_stereo_dso)/calib/campus/cam.txt" />
+  <arg name="left_topic_name" default="/camera/infra1/image_rect_raw/compressed" />
+  <arg name="right_topic_name" default="/camera/infra2/image_rect_raw/compressed" />
+
+  <node name="stereo_dso" pkg="cmd_stereo_dso" type="dso_dataset_ros" output="screen" required="true">
+    <param name="files" value="$(arg files_path)" />
+    <param name="bag" value="$(arg bag_path)/D_filter1.bag" />
+    <param name="calib" value="$(arg calib_path)" />
+    <param name="topic0" value="$(arg left_topic_name)" />
+    <param name="topic1" value="$(arg right_topic_name)" />
+    <param name="preset" value="0" />
+    <param name="mode" value="1" />
+    <param name="quiet" value="1" />
+    <param name="nomt" value="1" />
+  </node>
+</launch>

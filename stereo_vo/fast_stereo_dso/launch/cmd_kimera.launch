@@ -1,0 +1,33 @@
+<launch>
+  <arg name="files_path" default="/media/sysu/Samsung_T5/JZ_CODSV/Kimera-Multi/campus_outdoor_10_14/extract_frame" />
+  <arg name="bag_path" default="/media/sysu/Samsung_T5/JZ_CODSV/Kimera-Multi/campus_outdoor_10_14/extract_frame" />
+  <arg name="calib_path"
+    default="$(find cmd_stereo_dso)/calib/kimera/cam.txt" />
+  <arg name="left_topic_name" default="/camera/infra1/image_rect_raw/compressed" />
+  <arg name="right_topic_name" default="" />
+
+  <node name="stereo_dso_jackal2" pkg="cmd_stereo_dso" type="dso_dataset_ros" output="screen" required="true">
+    <param name="files" value="$(arg files_path)" />
+    <param name="bag" value="$(arg bag_path)/10_14_acl_jackal2.bag" />
+    <param name="calib" value="$(arg calib_path)" />
+    <param name="topic0" value="/acl_jackal2/forward/infra1/image_rect_raw/compressed" />
+    <param name="topic1" value="/acl_jackal2/forward/infra2/image_rect_raw/compressed" />
+    <param name="preset" value="0" />
+    <param name="mode" value="1" />
+    <param name="quiet" value="1" />
+    <param name="nomt" value="1" />
+  </node>
+
+  <node name="stereo_dso_jackal2" pkg="cmd_stereo_dso" type="dso_dataset_ros" output="screen" required="true">
+    <param name="files" value="$(arg files_path)" />
+    <param name="bag" value="$(arg bag_path)/10_14_acl_jackal.bag" />
+    <param name="calib" value="$(arg calib_path)" />
+    <param name="topic0" value="/acl_jackal2/forward/infra1/image_rect_raw/compressed" />
+    <param name="topic1" value="/acl_jackal2/forward/infra2/image_rect_raw/compressed" />
+    <param name="preset" value="0" />
+    <param name="mode" value="1" />
+    <param name="quiet" value="1" />
+    <param name="nomt" value="1" />
+  </node>
+
+</launch>

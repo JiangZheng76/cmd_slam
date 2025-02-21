@@ -20,15 +20,15 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17  ")
 # 让目标调用库可以找到头文件
 set(INCLUDE_DIRS
     ${PROJECT_SOURCE_DIR}/src
-    ${PROJECT_SOURCE_DIR}/thrid-party/mysylar/mysylar
-    ${PROJECT_SOURCE_DIR}/thrid-party/cereal/include
+    ${PROJECT_SOURCE_DIR}/Thridparty/mysylar/mysylar
+    ${PROJECT_SOURCE_DIR}/Thridparty/cereal/include
 )
 set(EIGEN3_INCLUDE_DIRS /home/sysu/eigen-3.4.0)
 # find_package(Eigen3 REQUIRED)
 find_package(Sophus REQUIRED)
 find_package(fmt REQUIRED)
-add_subdirectory(${PROJECT_SOURCE_DIR}/thrid-party/cereal)
-add_subdirectory(${PROJECT_SOURCE_DIR}/thrid-party/mysylar)
+add_subdirectory(${PROJECT_SOURCE_DIR}/Thridparty/cereal)
+add_subdirectory(${PROJECT_SOURCE_DIR}/Thridparty/mysylar)
 set(LIBS
     mysylar
     pthread

@@ -3,6 +3,10 @@ out/
 Docker/
 lib/
 bin/
+vo/
+
+OtherSlam/
+/OtherSlam/
 
 % Ignore VS code settings
 .vscode
