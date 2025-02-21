@@ -8,7 +8,7 @@
  */
 #ifndef __SYLAR_HTTP_SESSION_H__
 #define __SYLAR_HTTP_SESSION_H__
-#include "streams/socket_stream.h"
+#include "socket_stream.h"
 #include "http/http_parser.h"
 #include <memory>
 

@@ -9,7 +9,7 @@
 #include "fd_manager.h"
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "hook.h"
+// #include "hook.h"
 #include <fcntl.h>
 #include <sys/types.h>          /* See NOTES */
 #include <sys/socket.h>
@@ -49,10 +49,11 @@ bool FdCtx::init(){
         // ？？？为什么系统设计如果是socket就走hook，不是socket(普通文件)就按照原来的走
         // 主要是面向 socket
         // 获取 socket 的 flag
-        int flag = fcntl_f(m_fd,F_GETFL,0);
+        int flag = fcntl(m_fd,F_GETFL,0); // TODO 修改了 hook fcntl_f
         // 为什需要保证socket是非阻塞的？？？ 
         if(!(flag & O_NONBLOCK)){
-            fcntl_f(m_fd,F_SETFL,flag | O_NONBLOCK);
+            // TODO 修改了 hook fcntl_f
+            fcntl(m_fd,F_SETFL,flag | O_NONBLOCK);
         }
         m_sysNonblock = true;
     }else {

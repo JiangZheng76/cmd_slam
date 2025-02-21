@@ -6,9 +6,9 @@
  * @FilePath: /mysylar/mysylar/hook.cc
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
-#include "hook.h"
+// #include "hook.h"
 #include "sylar.h"
-#include "iomanager.h"
+#include "iomanager.hpp"
 #include "fd_manager.h"
 #include <dlfcn.h>
 #include <sys/types.h>          /* See NOTES */
@@ -129,7 +129,7 @@ struct time_info{
 template<typename OrginFun,typename ... Args>
 static ssize_t do_io(int fd,OrginFun fun,const char* hook_fun_name
     , uint32_t event, int timeout_so, Args&& ... args){ // ？？？ Args&& 是什么意思？？Univesal 引用，可以穿左值或者是右值
-    if(!mysylar::t_enable_hook){
+    if(!mysylar::is_enable_hook()){
         // 万能引用 Args&& ...
         // 确保了传进去的参数类型是和原来一样的
         return fun(fd,std::forward<Args>(args)...);
@@ -232,7 +232,7 @@ extern "C"{
  * @return {*}
  */
 unsigned int sleep(unsigned int seconds){
-    if(mysylar::is_enable_hook()){
+    if(!mysylar::is_enable_hook()){
         return sleep_f(seconds);
     }
     mysylar::Fiber::ptr fiber = mysylar::Fiber::GetThis();
@@ -245,7 +245,7 @@ unsigned int sleep(unsigned int seconds){
     return 0;
 }
 int usleep(useconds_t usec ){
-    if(mysylar::is_enable_hook()){
+    if(!mysylar::is_enable_hook()){
         return usleep_f(usec);
     }
     mysylar::Fiber::ptr fiber = mysylar::Fiber::GetThis();
@@ -257,7 +257,7 @@ int usleep(useconds_t usec ){
     return 0;
 }
 int nanosleep(const struct timespec *req, struct timespec *rem){
-    if(mysylar::is_enable_hook()){
+    if(!mysylar::is_enable_hook()){
         return nanosleep_f(req,rem);
     }
     mysylar::Fiber::ptr fiber = mysylar::Fiber::GetThis();
@@ -295,7 +295,7 @@ int socket(int domain, int type, int protocol){
  * @return {*}
  */
 int connect_with_timeout(int sockfd, const struct sockaddr *addr, socklen_t addrlen, uint64_t timeout_ms){
-    if(!mysylar::t_enable_hook){
+    if(!mysylar::is_enable_hook()){
         return connect_f(sockfd,addr,addrlen);
     }
     auto ctx = mysylar::FdMgr::GetInstance()->get(sockfd);
@@ -424,7 +424,7 @@ ssize_t sendmsg(int s, const struct msghdr *msg, int flags){
     return do_io(s,sendmsg_f,"sendmsg",mysylar::IOManager::WRITE,SO_SNDTIMEO,msg,flags);
 }
 int close(int fd){
-    if(!mysylar::t_enable_hook){
+    if(!mysylar::is_enable_hook()){
         return close_f(fd);
     }
     mysylar::FdCtx::ptr ctx =  mysylar::FdMgr::GetInstance()->get(fd);
@@ -449,6 +449,9 @@ int close(int fd){
  * @return {*}
  */
 int fcntl(int fd, int cmd, ... /* arg */ ) {
+    if(!mysylar::is_enable_hook()){
+        return fcntl_f(fd,cmd);
+    }
     va_list va;
     va_start(va, cmd);
     switch(cmd) {
@@ -538,6 +541,7 @@ int fcntl(int fd, int cmd, ... /* arg */ ) {
             return fcntl_f(fd, cmd);
     }
 }
+
 /**
  * @brief 设置阻塞的时候，也是默认设置用户级的阻塞
  * @param {int} d
@@ -566,7 +570,7 @@ int getsockopt(int sockfd, int level, int optname, void *optval, socklen_t *optl
     return getsockopt_f(sockfd,level,optname,optval,optlen);
 }
 int setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t optlen){
-    if(mysylar::t_enable_hook){
+    if(!mysylar::is_enable_hook()){
         return setsockopt_f(sockfd,level,optname,optval,optlen);
     }
     // 如果是设置socket的时间的话，也同步fd manager 中维护的时间

@@ -417,13 +417,6 @@ public:
 
 };
 
-static std::ostream& operator<<(std::ostream& os,HttpRequest& req){
-  return req.dump(os);
-}
-static std::ostream& operator<<(std::ostream& os,HttpResponse& rsp){
-  return rsp.dump(os);
-}
-
 }
 }
 

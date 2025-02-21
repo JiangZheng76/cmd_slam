@@ -24,7 +24,7 @@ EXTENSION_MAPPING =
 # Set the wildcard patterns used to filter out the source-files.
 # If left blank the default is:
 # *.c, *.cc, *.cxx, *.cpp, *.c++, *.java, *.ii, *.ixx, *.ipp, *.i++, *.inl,
-# *.idl, *.ddl, *.odl, *.h, *.hh, *.hxx, *.hpp, *.h++, *.cs, *.d, *.php,
+# *.idl, *.ddl, *.odl, *.h, *.h, *.hxx, *.hpp, *.h++, *.cs, *.d, *.php,
 # *.php4, *.php5, *.phtml, *.inc, *.m, *.markdown, *.md, *.mm, *.dox, *.py,
 # *.f90, *.f, *.for, *.tcl, *.vhd, *.vhdl, *.ucf, *.qsf, *.as and *.js.
 FILE_PATTERNS =

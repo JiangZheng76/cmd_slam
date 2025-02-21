@@ -7,9 +7,9 @@
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
 #include "tcp_server.h"
-#include "iomanager.h"
+#include "iomanager.hpp"
 #include "log.h"
-#include "streams/socket_stream.h"
+#include "socket_stream.h"
 
 mysylar::Logger::ptr g_logger = SYLAR_LOG_ROOT();
 // static mysylar::ConfigVar<uint64_t>::ptr s

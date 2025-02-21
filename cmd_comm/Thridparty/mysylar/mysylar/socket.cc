@@ -1,6 +1,7 @@
 #include "socket.h"
 #include "fd_manager.h"
-#include "hook.h"
+// #include "hook.h"
+#include "log.h"
 #include <sys/types.h>          /* See NOTES */
 #include <sys/socket.h>
 #include <netinet/tcp.h>
@@ -123,7 +124,7 @@ Socket::ptr Socket::accept(){
     // accept 成功之后返回新创建的 sock fd
     int netsocket = ::accept(m_sock,nullptr,nullptr); 
     if(!netsocket){
-        SYLAR_LOG_INFO(g_logger_sys)<< "Socket::accept() sock=" << m_sock << " errno=" << errno 
+        SYLAR_LOG_ERROR(g_logger_sys)<< "Socket::accept() sock=" << m_sock << " errno=" << errno 
             << "strerrno=" << std::strerror(errno);
         return nullptr;
     }
@@ -143,16 +144,17 @@ bool Socket::init(int sock){
     FdCtx::ptr ctx = FdMgr::GetInstance()->get(sock);
      // sock 即有自己的对象，也有在 fd 中保存起来
     //  创建了
-    if(ctx && ctx->isSocket() && !ctx->isClose()){
-        m_sock = sock;
-        m_isConnected = true;
-        // 内部 option 的设置
-        initSock();
-        // 记录当前这个 sock 的远端地址（客户端）和本地地址（服务器新分配的）
-        getLocalAddress();
-        getRemoteAddress();
-        return true;
-    }
+    // if(ctx && ctx->isSocket() && !ctx->isClose()){
+    // TODO socke 
+    m_sock = sock;
+    m_isConnected = true;
+    // 内部 option 的设置
+    initSock();
+    // 记录当前这个 sock 的远端地址（客户端）和本地地址（服务器新分配的）
+    getLocalAddress();
+    getRemoteAddress();
+    return true;
+    // }
     return false;
 }
 bool Socket::isVaild() const{
@@ -209,7 +211,9 @@ bool Socket::connect(const Address::ptr addr, uint64_t timeout_ms){
             return false;
         }
     } else {
-        if(::connect_with_timeout(m_sock,addr->getAddr(),addr->getAddrlen(),timeout_ms)){
+        // TODO 修改了 hook connect
+        // if((::connect_with_timeout(m_sock,addr->getAddr(),addr->getAddrlen(),timeout_ms)){
+        if(::connect(m_sock,addr->getAddr(),addr->getAddrlen())){
             SYLAR_LOG_ERROR(g_logger_sys) << "Socket::connect  ::connect_with_timeout("<<m_sock << " ," << addr->toString() << "," << addr->getAddrlen() 
                 << "," << timeout_ms << ") errno=" << strerror(errno) ;
             close();
@@ -483,201 +487,6 @@ void Socket::newSock(){
 std::ostream& operator<<(std::ostream& os ,const Socket& sock){
     return sock.dump(os);
 }
-
-struct _SSLInit {
-    _SSLInit() {
-        // 初始化 ssl
-        // OPENSSL_init_ssl();
-        OPENSSL_init_ssl(OPENSSL_INIT_LOAD_SSL_STRINGS | OPENSSL_INIT_LOAD_CRYPTO_STRINGS, NULL);
-        //  调试使用，遇到错误的时候加载人类可读的错误字
-        SSL_load_error_strings();
-        // 添加所有可用的加密算法
-        OpenSSL_add_all_algorithms();
-    }
-};
-static _SSLInit s_init;
-
-SSLSocket::SSLSocket(int family,int type,int protocol )
-    :Socket(family,type,protocol){
-}
-/// @brief 主要是工具的作用，返回一个 SSlSocket 的 socket 指针
-/// @return 
-Socket::ptr SSLSocket::accept(){
-    // 先建立一个 sock 链接
-    SSLSocket::ptr sock(new SSLSocket(m_family, m_type, m_protocol));
-    int newsock = ::accept(m_sock, nullptr, nullptr);
-    if(newsock == -1) {
-        SYLAR_LOG_ERROR(g_logger_sys) << "accept(" << m_sock << ") errno="
-            << errno << " errstr=" << strerror(errno);
-        return nullptr;
-    }
-    sock->m_ctx = m_ctx;
-    // 初始化
-    if(sock->init(newsock)) {
-        return sock;
-    }
-    return nullptr;
-}
-SSLSocket::ptr SSLSocket::CreateTCP(Address::ptr addr){
-    SSLSocket::ptr ssl_sock(new SSLSocket(addr->getFamily(),TCP));
-    return ssl_sock;
-}
-/// 初始化本地地址
-bool SSLSocket::bind(const Address::ptr addr){
-    return Socket::bind(addr);
-}
-/// SSLSocket 和普通 Socket 不同的地方在于建立链接之后还要进行 ssl 握手
-bool SSLSocket::connect(const Address::ptr addr, uint64_t timeout_ms){
-    bool v = Socket::connect(addr, timeout_ms);
-    if(v) {
-        /**
-        1.	创建并初始化一个SSL上下文。
-	    2.	使用该上下文创建一个SSL对象。
-	    3.	将一个套接字文件描述符与SSL对象关联。
-	    4.	尝试通过SSL握手与服务器建立SSL连接，并将结果存储在变量v中。
-        */
-        // 创建ssl上下文环境
-        m_ctx.reset(SSL_CTX_new(SSLv23_client_method()), SSL_CTX_free);
-        // 利用上下文环境创建 ssl
-        m_ssl.reset(SSL_new(m_ctx.get()),  SSL_free);
-        // 将套接字的文件描述符合 ssl 绑定起来
-        SSL_set_fd(m_ssl.get(), m_sock);
-        // 建立一个 ssl 加密链接
-        v = (SSL_connect(m_ssl.get()) == 1);
-    }
-    return v;
-}
-bool SSLSocket::listen(int backlog){
-    return Socket::listen(backlog);
-}
-/// 
-bool SSLSocket::close(){
-    // SSL 握手不需要断开
-    return close();
-}
-/// 发送使用 SSL_write加密发送数据
-int SSLSocket::send(const void* buffer, size_t length, int flags) {
-    if(m_ssl) {
-        return SSL_write(m_ssl.get(), buffer, length);
-    }
-    return -1;
-}
-
-int SSLSocket::send(const iovec* buffers, size_t length, int flags) {
-    if(!m_ssl) {
-        return -1;
-    }
-    int total = 0;
-    for(size_t i = 0; i < length; ++i) {
-        int tmp = SSL_write(m_ssl.get(), buffers[i].iov_base, buffers[i].iov_len);
-        if(tmp <= 0) {
-            return tmp;
-        }
-        total += tmp;
-        if(tmp != (int)buffers[i].iov_len) {
-            break;
-        }
-    }
-    return total;
-}
-
-int SSLSocket::sendTo(const void* buffer, size_t length, const Address::ptr to, int flags) {
-    SYLAR_ASSERT(false);
-    return -1;
-}
-
-int SSLSocket::sendTo(const iovec* buffers, size_t length, const Address::ptr to, int flags) {
-    SYLAR_ASSERT(false);
-    return -1;
-}
-
-int SSLSocket::recv(void* buffer, size_t length, int flags) {
-    if(m_ssl) {
-        return SSL_read(m_ssl.get(), buffer, length);
-    }
-    return -1;
-}
-
-int SSLSocket::recv(iovec* buffers, size_t length, int flags) {
-    if(!m_ssl) {
-        return -1;
-    }
-    int total = 0;
-    for(size_t i = 0; i < length; ++i) {
-        int tmp = SSL_read(m_ssl.get(), buffers[i].iov_base, buffers[i].iov_len);
-        if(tmp <= 0) {
-            return tmp;
-        }
-        total += tmp;
-        if(tmp != (int)buffers[i].iov_len) {
-            break;
-        }
-    }
-    return total;
-}
-int SSLSocket::recvFrom(void* buffer, size_t length, Address::ptr from, int flags) {
-    SYLAR_ASSERT(false);
-    return -1;
-}
-
-int SSLSocket::recvFrom(iovec* buffers, size_t length, Address::ptr from, int flags) {
-    SYLAR_ASSERT(false);
-    return -1;
-}
-
-// 是 服务端侧 加载自己的证书用的
-bool SSLSocket::loadCertificates(const std::string& cert_file, const std::string& key_file) {
-    m_ctx.reset(SSL_CTX_new(SSLv23_server_method()), SSL_CTX_free);
-    // 加载证书链文件
-    if(SSL_CTX_use_certificate_chain_file(m_ctx.get(), cert_file.c_str()) != 1) {
-        SYLAR_LOG_ERROR(g_logger_sys) << "SSL_CTX_use_certificate_chain_file("
-            << cert_file << ") error";
-        return false;
-    }
-    // 将私钥文件加载到SSL上下文中。key_file是私钥文件的路径
-    if(SSL_CTX_use_PrivateKey_file(m_ctx.get(), key_file.c_str(), SSL_FILETYPE_PEM) != 1) {
-        SYLAR_LOG_ERROR(g_logger_sys) << "SSL_CTX_use_PrivateKey_file("
-            << key_file << ") error";
-        return false;
-    }
-    // 检查证书和密钥是否匹配
-    if(SSL_CTX_check_private_key(m_ctx.get()) != 1) {
-        SYLAR_LOG_ERROR(g_logger_sys) << "SSL_CTX_check_private_key cert_file="
-            << cert_file << " key_file=" << key_file;
-        return false;
-    }
-    return true;
-}
-std::ostream& SSLSocket::dump(std::ostream& os) const {
-    os << "[SSLSocket sock=" << m_sock
-       << " is_connected=" << m_isConnected
-       << " family=" << m_family
-       << " type=" << m_type
-       << " protocol=" << m_protocol;
-    if(m_localAddress) {
-        os << " local_address=" << m_localAddress->toString();
-    }
-    if(m_remoteAddress) {
-        os << " remote_address=" << m_remoteAddress->toString();
-    }
-    os << "]";
-    return os;
-}
-
-// 将建立的链接套接字初始化到自己的服务中,通常是在 accept 之后调用
-bool SSLSocket::init(int sock) {
-    int v = Socket::init(sock);
-    if(v){
-        // 初始化 ssl
-        m_ssl.reset(SSL_new(m_ctx.get()), SSL_free);
-        // 将套接字的文件描述符合 ssl 绑定起来
-        SSL_set_fd(m_ssl.get(), m_sock);
-        // 与链接发起方，进行 ssl 四次握手
-        v= (SSL_accept(m_ssl.get()) == 1 );
-    }
-    return v;
-}
-
 
 }
 

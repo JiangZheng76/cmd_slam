@@ -6,7 +6,7 @@
  * @FilePath: /mysylar/mysylar/time.cc
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
-#include "timer.h"
+#include "timer.hpp"
 
 namespace mysylar{
 
@@ -18,7 +18,7 @@ static Logger::ptr g_Logger_sys = SYLAR_LOG_ROOT();
  * @description: 
  * @return {*}
  */
-bool Timer::Comparator::operator() (const Timer::ptr& lhs,const Timer::ptr & rhs){
+bool Timer::Comparator::operator() (const Timer::ptr& lhs,const Timer::ptr & rhs) const{
     if(!lhs && !rhs){
         return false;
     }

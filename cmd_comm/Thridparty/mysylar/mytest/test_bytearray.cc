@@ -9,7 +9,7 @@
 #include "bytearray.h"
 #include "sylar.h"
 #include <vector>
-#include "hook.h"
+// #include "hook.h"
 static mysylar::Logger::ptr g_logger = SYLAR_LOG_ROOT();
 void test() {
 #define XX(type, len, write_fun, read_fun, base_len) {\

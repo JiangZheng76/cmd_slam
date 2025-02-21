@@ -1,10 +1,10 @@
-#include "http/http_server.h"
-#include "http/http_session.h"
+#include "http_server.h"
+#include "http_session.h"
 namespace mysylar{
 namespace http{
 
 
-static mysylar::Logger::ptr g_logger = SYLAR_LOG_ROOT();
+mysylar::Logger::ptr g_logger = SYLAR_LOG_ROOT();
 HttpServer::HttpServer(bool keepalive,IOManager* worker
     ,IOManager* accept_worker
     )

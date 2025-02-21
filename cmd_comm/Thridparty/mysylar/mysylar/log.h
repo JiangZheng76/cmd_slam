@@ -6,7 +6,7 @@
  * @FilePath: /mysylar/mysylar/log.h
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
-#include "config.h"
+#include "config.hpp"
 #ifndef __MYSYLAR_LOG_H__
 #define __MYSYLAR_LOG_H__
 
@@ -19,13 +19,12 @@
 #include <fstream>
 #include <vector>
 #include <map>
-#include <unordered_map>
 #include <memory>
 #include <tuple>
 
-#include "mutex.h"
+#include "mutex.hpp"
 #include "singleton.h"
-#include "thread.h"
+#include "threads.h"
 
 #define SYLAR_LOG_LEVEL(logger, level) \
     if(logger->getLevel() <= level)  \

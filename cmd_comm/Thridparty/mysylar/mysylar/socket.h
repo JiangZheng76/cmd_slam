@@ -3,9 +3,6 @@
 #include "address.h"
 #include <memory>
 #include "noncopyable.h"
-
-#include <openssl/ssl.h>
-#include <openssl/err.h>
 namespace mysylar{
 /**
  * @brief Socket 是不可以复制资源
@@ -124,22 +121,22 @@ public:
     }
     
     // 封装的 accept，bind，connect，listen 接口
-    virtual Socket::ptr accept();
-    virtual bool init(int sock);
-    virtual bool bind(const Address::ptr addr);
-    virtual bool connect(const Address::ptr addr, uint64_t timeout_ms = -1);
-    virtual bool listen(int backlog = SOMAXCONN);
-    virtual bool close();
+    Socket::ptr accept();
+    bool init(int sock);
+    bool bind(const Address::ptr addr);
+    bool connect(const Address::ptr addr, uint64_t timeout_ms = -1);
+    bool listen(int backlog = SOMAXCONN);
+    bool close();
     // TCP 使用
-    virtual int send(const void* buffer,size_t length,int flags = 0);
-    virtual int send(const iovec* buffers,size_t length,int flags = 0);
-    virtual int recv(void * buffer,size_t length,int flags = 0);
-    virtual int recv(iovec * buffers,size_t length,int flags = 0);
+    int send(const void* buffer,size_t length,int flags = 0);
+    int send(const iovec* buffers,size_t length,int flags = 0);
+    int recv(void * buffer,size_t length,int flags = 0);
+    int recv(iovec * buffers,size_t length,int flags = 0);
     // UDP使用
-    virtual int sendTo(const void* buffer,size_t length,const Address::ptr to,int flags = 0);
-    virtual int sendTo(const iovec* buffers,size_t length,const Address::ptr to ,int flags = 0);
-    virtual int recvFrom(iovec * buffers,size_t length, Address::ptr from ,int flags = 0);
-    virtual int recvFrom(void * buffers,size_t length, Address::ptr from ,int flags = 0);
+    int sendTo(const void* buffer,size_t length,const Address::ptr to,int flags = 0);
+    int sendTo(const iovec* buffers,size_t length,const Address::ptr to ,int flags = 0);
+    int recvFrom(iovec * buffers,size_t length, Address::ptr from ,int flags = 0);
+    int recvFrom(void * buffers,size_t length, Address::ptr from ,int flags = 0);
 
     Address::ptr getRemoteAddress();
     Address::ptr getLocalAddress();
@@ -153,7 +150,7 @@ public:
     int getError();
 
     // ？？？有啥用，用来输出sock 信息的
-    virtual std::ostream& dump(std::ostream& os) const;
+    std::ostream& dump(std::ostream& os) const;
     int getSocket() const { return m_sock;}
 
     // 取消调度器中对 sock 的监听接口
@@ -177,7 +174,7 @@ private:
      */    
     void newSock();
 
-protected:
+private:
     int m_sock;
     int m_family;
     int m_type;
@@ -188,45 +185,6 @@ protected:
     Address::ptr m_remoteAddress;
 
 };
-
-/* 主要看的内容
-    init 是 accept 之后将新建立的套接字绑定到新的 socket 对象
-    SSL 握手的过程主要是在 connect 和 accept 的时候，TCP 三次握手之后进行的
-    在 ssl 握手之前需要加载上下文环境：
-        ，服务端在服务启动之前就需要loadCertificates加载证书
-        ，客户端则是在 connect 的时候加载上下文并且通过 SSL_connect 验证证书
-*/
-class SSLSocket : public Socket{
-public:
-    using ptr = std::shared_ptr<SSLSocket>;
-
-    static SSLSocket::ptr CreateTCP(Address::ptr addr);
-
-    SSLSocket(int family,int type,int protocol = 0);
-    virtual Socket::ptr accept() override;
-    virtual bool bind(const Address::ptr addr) override;
-    virtual bool connect(const Address::ptr addr, uint64_t timeout_ms = -1) override;
-    virtual bool listen(int backlog = SOMAXCONN) override;
-    virtual bool close() override;
-    virtual int send(const void* buffer, size_t length, int flags = 0) override;
-    virtual int send(const iovec* buffers, size_t length, int flags = 0) override;
-    virtual int sendTo(const void* buffer, size_t length, const Address::ptr to, int flags = 0) override;
-    virtual int sendTo(const iovec* buffers, size_t length, const Address::ptr to, int flags = 0) override;
-    virtual int recv(void* buffer, size_t length, int flags = 0) override;
-    virtual int recv(iovec* buffers, size_t length, int flags = 0) override;
-    virtual int recvFrom(void* buffer, size_t length, Address::ptr from, int flags = 0) override;
-    virtual int recvFrom(iovec* buffers, size_t length, Address::ptr from, int flags = 0) override;
-
-    bool loadCertificates(const std::string& cert_file, const std::string& key_file);
-    virtual std::ostream& dump(std::ostream& os) const override;
-protected:
-    virtual bool init(int sock) override;
-private:
-    // 不是很懂 SSL 和 SSL_CTX 的作用？？？
-    std::shared_ptr<SSL_CTX> m_ctx;
-    std::shared_ptr<SSL> m_ssl;
-};
-
 /**
  * @brief 流式输出socket
  * @param[in, out] os 输出流

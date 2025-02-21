@@ -1,8 +1,8 @@
 /*
  * @Author: error: error: git config user.name & please set dead value or install git && error: git config user.email & please set dead value or install git & please set dead value or install git
  * @Date: 2023-06-13 10:49:20
- * @LastEditors: Johnathan 2440877322@qq.com
- * @LastEditTime: 2024-08-13 23:35:58
+ * @LastEditors: Jiangzheng 2440877322@qq.com
+ * @LastEditTime: 2024-03-14 14:55:21
  * @FilePath: /mysylar/mysylar/thread.cc
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -66,11 +66,6 @@ Thread::~Thread(){
         pthread_detach(m_thread);
     }
 }
-void Thread::detach(){
-    if(m_thread){
-        pthread_detach(m_thread);
-    }
-}
 /**
  * @brief 获取当前的执行线程，A线程里面调用获取A线程自己 
  * @description: 
@@ -110,6 +105,16 @@ void Thread::join(){
     }
     
 }
+void Thread::detach(){
+    if(m_thread){
+        int rt = pthread_detach(m_thread);
+        if(rt) {
+                SYLAR_LOG_ERROR(g_log_system) << "pthread_join thread fail" 
+                << rt << " name= " << m_name;
+            throw std::logic_error("pthread_join error");
+        }
+    }
+}
 
 /**
  * @brief 
@@ -132,7 +137,7 @@ void* Thread::run(void* arg){
     // 需要等待线程开始跑了，提醒结束初始化
     thread->m_semaphore.notify();
     cb();
-    SYLAR_LOG_INFO(g_log_system) << "thraed end.";
+    SYLAR_LOG_DEBUG(g_log_system) << "thread end.";
     return 0;
 }
 

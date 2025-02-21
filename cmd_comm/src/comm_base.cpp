@@ -49,7 +49,7 @@ SocketPtr CommunicatorBase::connectToServer(const char *node,
   IPv4AddressPtr address = IPv4Address::LookupAnyIPAddress(
       node, Socket::Family::IPv4, Socket::Type::TCP);
   SocketPtr sock(new Socket(Socket::Family::IPv4, Socket::Type::TCP));
-  if (!sock->connect(address, 5000)) {
+  if (!sock->connect(address, 50000)) {
     return nullptr;
   }
   return sock;

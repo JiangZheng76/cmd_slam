@@ -1,12 +1,12 @@
 /*
  * @Author: error: error: git config user.name & please set dead value or install git && error: git config user.email & please set dead value or install git & please set dead value or install git
  * @Date: 2023-06-21 12:25:54
- * @LastEditors: Johnathan 2440877322@qq.com
- * @LastEditTime: 2024-08-14 00:33:21
+ * @LastEditors: Jiangzheng 2440877322@qq.com
+ * @LastEditTime: 2024-03-14 21:59:09
  * @FilePath: /mysylar/mysylar/fiber.cc
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
-#include "fiber.h"
+#include "fiber.hpp"
 
 namespace mysylar{
 
@@ -181,7 +181,7 @@ Fiber::ptr Fiber::GetThis(){
         return t_fiber->shared_from_this();
     }
     // 本线程第一次调用（当前线程还没有配置协程）
-    Fiber::ptr main_fiber(new Fiber); // 这里会配置 SetThis()
+    Fiber::ptr main_fiber(new Fiber);
     SYLAR_ASSERT(main_fiber.get() == t_fiber);
     // 那么就默认调用的是主线程，并创建主线程对象（默认构造函数）和初始化本线程环境
     t_threadfiber = main_fiber;
@@ -235,8 +235,6 @@ void Fiber::MainFunc(){
             << std::endl
             << mysylar::BacktraceToString(100);
     }
-    // 因为 swap 回去之后，fiber 也不一定会被析构，所以协程的栈空间也还是在那里
-    // 所以需要手动将智能指针释放
     auto raw_ptr = cur.get();
     cur.reset(); // 智能指针数-1
     // 执行结束之后 回到主Fiber

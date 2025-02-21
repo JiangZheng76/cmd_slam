@@ -23,7 +23,12 @@ ByteArray::Node::Node(size_t s)
     ,next(nullptr)
     ,size(s){
 }
-        
+ByteArray::Node::Node(char* p,size_t s)
+    :ptr(p)
+    ,next(nullptr)
+    ,size(s){
+    
+}        
 ByteArray::Node::Node()
     :ptr(nullptr)
     ,next(nullptr)
@@ -35,16 +40,31 @@ ByteArray::Node::~Node(){
         delete[] ptr;
     }
 }
-
+/// @brief 将 buf 创建成 bytearray 第一个块,接管了 buf
+/// @param buf 
+/// @param base_size 为 buf 的大小相等
+ByteArray::ByteArray(char* buf,size_t base_size)
+    :m_position(base_size)
+    ,m_read_position(0)
+    ,m_capacity(base_size)
+    ,m_baseSize(base_size)
+    ,m_size(base_size)
+    ,m_endian(SYLAR_BIG_ENDIAN)
+    ,m_root(new Node(buf,base_size))
+    ,m_cur(m_root){
+    // UNKNOW  没有验证，不是知道是否会出现错误
+    SYLAR_LOG_DEBUG(g_logger_sys) << "TEST ByteArray 构造函数.";
+    
+}
 ByteArray::ByteArray(size_t base_size)
     :m_position(0)
+    ,m_read_position(0)
     ,m_capacity(base_size)
     ,m_baseSize(base_size)
     ,m_size(0)
     ,m_endian(SYLAR_BIG_ENDIAN)
     ,m_root(new Node(base_size))
     ,m_cur(m_root){
-
 }
 ByteArray::~ByteArray(){
     Node* tmp = m_root;
@@ -402,6 +422,7 @@ std::string ByteArray::readStringVint(){
  */
 void ByteArray::clear(){
     m_position = m_size = 0;
+    m_read_position = 0;
     m_capacity = m_baseSize;
     Node* tmp = m_root->next;
     while(tmp) {
@@ -413,7 +434,18 @@ void ByteArray::clear(){
     m_cur->next = nullptr;
 }
 /**
- * @brief 将内容写入块中
+ * @brief 不清理原有的数据，重置写指针
+ * @description: 
+ * @return {*}
+ */
+void ByteArray::reset(){
+    m_size = 0;
+    m_position = 0;
+    m_read_position = 0;
+    m_cur = m_root;
+}
+/**
+ * @brief 将内容写入 bytearray 中
  * @param {void*} buf
  * @param {size_t} size
  * @description: 
@@ -458,8 +490,53 @@ void ByteArray::write(const void* buf,size_t size){
         m_size = m_position;
     }
 }
+
+/// @brief 写 size 的数据到 os 中
+/// @param os 
+/// @param size 
+void ByteArray::write(std::ostream& os,size_t size){
+    if(size == 0){
+        return;
+    }
+    // 保证空间足够
+    addCapacity(size);
+
+    // 块中位置
+    size_t npos = m_position % m_baseSize;
+    // 当前块剩余空间
+    size_t ncap = m_cur->size - npos;
+    // buf中的位置
+    size_t bpos = 0;
+    while(size > 0){
+        if(ncap >= size){
+            os.write((const char*)m_cur->ptr + npos,size);
+            // memcpy(m_cur->ptr + npos,(const char*)buf + bpos , size);
+            if((size + npos) == m_cur->size){
+                // 当前的写满了，指针自动跳到下一个 node
+                m_cur = m_cur->next;
+            }
+            m_position += size;
+            bpos += size;
+            ncap -= size;
+            size = 0;
+        }else{
+            // memcpy(m_cur->ptr + npos,(char*)buf + bpos,ncap);
+            os.write((const char*)m_cur->ptr + npos,ncap);
+            m_position += ncap;
+            bpos += ncap;
+            size -= ncap;
+            m_cur = m_cur->next;
+            ncap = m_cur->size;
+            npos = 0;
+        }
+    }
+
+    if(m_position > m_size){
+        m_size = m_position;
+    }
+}
 /**
- * @brief read 是用于固定长度的读写的，如果长度不够的话表明不能正确表示和这个 uinxx_t
+ * @brief 读取 bytearray 中的数据
  * @param {void*} buf
  * @param {size_t} size
  * @description: 
@@ -474,7 +551,7 @@ void ByteArray::read(void* buf,size_t size){
         throw std::out_of_range("not enough len");
     }
 
-    size_t npos = m_position % m_baseSize;
+    size_t npos = m_read_position % m_baseSize;
     size_t ncap = m_cur->size - npos;
     // buf postion 
     size_t bpos = 0;
@@ -487,14 +564,14 @@ void ByteArray::read(void* buf,size_t size){
                 // 你怎么知道够不够空间？？？因为这个是读？？
                 m_cur = m_cur->next;
             }
-            m_position += size;
+            m_read_position += size;
             bpos -=size;
             npos += size;
             size = 0;
         }else {
             memcpy((char*)buf + bpos,m_cur->ptr + npos,ncap);
             size -= ncap;
-            m_position += ncap;
+            m_read_position += ncap;
             bpos += ncap;
             m_cur = m_cur->next;
             ncap = m_cur->size;
@@ -698,7 +775,7 @@ uint64_t ByteArray::getReadBuffers(std::vector<iovec>& buffers,uint64_t len) con
     }
     uint64_t size = len;
     // node 中读位置
-    size_t npos = m_position % m_baseSize;
+    size_t npos = m_read_position % m_baseSize;
     // node 中容量
     size_t ncap = m_cur->size - npos;
     struct iovec iov;

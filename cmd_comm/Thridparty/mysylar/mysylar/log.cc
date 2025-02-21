@@ -23,7 +23,9 @@ public:
             os << "\e[1;31m" <<  LogLevel::ToString(level) << "\e[0m";    
         }else if (level == LogLevel::DEBUG){
             os << "\e[1;33m" <<  LogLevel::ToString(level) << "\e[0m";    
-        } else {
+        }else if(level == LogLevel::WARN){
+            os << "\e[1;35m" <<  LogLevel::ToString(level) << "\e[0m";    
+        }else {
             os << LogLevel::ToString(level);
         }
         
@@ -40,7 +42,18 @@ class NameFormatItem : public LogFormatter::FormatItem {
 public:
     NameFormatItem(const std::string& str=""){}
     void format(std::stringstream& os,std::shared_ptr<Logger> logger,LogLevel::Level level,LogEvent::ptr event) override{
-        os << logger->getName();
+        // 限制输出长度
+        size_t name_len = 15;
+        std::string name = logger->getName();
+        name = "[" + name +"]";
+        if(name.size() < name_len){
+            int pedding_size = name_len - name.size();
+            std::string pedding(pedding_size,' ');
+            name += pedding;
+        }else {
+            name = name.substr(0,name_len);
+        }
+        os  << name ;
     }
 };
 class FiberIdFormatItem : public LogFormatter::FormatItem {
@@ -76,7 +89,20 @@ class FilenameFormatItem : public LogFormatter::FormatItem {
 public:
     FilenameFormatItem(const std::string& str=""){}
     void format(std::stringstream& os,std::shared_ptr<Logger> logger,LogLevel::Level level,LogEvent::ptr event) override{
-        os << event->getFile();
+        // 限制文件长度
+        std::string file = event->getFile();
+        size_t log_len = 45;
+        
+        bool remain = false;
+        if(file.size() > log_len){
+            remain = true;
+        }
+        int start_inedx = file.size() - log_len;
+        file = file.substr(start_inedx,file.size() - start_inedx);    
+        if(remain){
+            // file = file;
+        }
+        os << file;
     }
 };
 class LineFormatItem : public LogFormatter::FormatItem {
@@ -176,9 +202,10 @@ LogLevel::Level LogLevel::fromString(std::string str){
 Logger::Logger(const std::string name)
     :m_name(name)
     ,m_level(LogLevel::Level::DEBUG){
-        m_formatter.reset(new LogFormatter("[%c]%T[%p]%T%d{%Y-%m-%d %H:%M:%S}%T[T:%t]%T[F:%F]%T%f:%l%T%T%m%T%n"));
+        // m_formatter.reset(new LogFormatter("[%c]%T[%p]%T%d{%Y-%m-%d %H:%M:%S}%T[T:%t]%T[F:%F]%T%f:%l%T%T%m%T%n"));
+        m_formatter.reset(new LogFormatter("%c[%p]%T%f:%l%n %m%n%n"));
 }
-/**
+/** 
  * @brief Logger 的输出函数，顺序调用所有的 appender 进行输出
  * @param {Level} level
  * @param {ptr} event
@@ -684,6 +711,7 @@ Logger::ptr LoggerManager::getLogger(const std::string& name)  {
     }
     Logger::ptr logger(new Logger(name));
     logger->setRoot(m_root);
+    logger->addAppender(LogAppender::ptr(new StdoutLogAppender()));
     m_loggers[name] = logger;
     return logger;
 }

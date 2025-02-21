@@ -6,9 +6,11 @@
  * @FilePath: /mysylar/mysylar/socket_stream.cc
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AEe
  */
-#include "streams/socket_stream.h"
+#include "socket_stream.h"
+#include "log.h"
 
 namespace mysylar{
+static Logger::ptr g_logger_sys = SYLAR_LOG_NAME("SYALR");
 
 SocketStream::SocketStream(Socket::ptr sock,bool owner)
     :m_socket(sock)
@@ -29,13 +31,20 @@ void SocketStream::close(){
         m_socket->close();
     }
 }
+void SocketStream::reset(Socket::ptr sock,bool owner){
+    if(m_socket && m_owner){
+        m_socket->close();
+    }
+    SYLAR_ASSERT(sock);
+    
+    m_socket = sock;
+    m_owner = owner;
+}
 int SocketStream::read(void* buffer,size_t length){
     if(!isConnected()){
         return -1;
     }
     int rt = m_socket->recv(buffer,length);
-    // std::string strstr((char*)buffer,length);
-    
     return rt;
 }
 int SocketStream::read(ByteArray::ptr ba,size_t length){
@@ -97,14 +106,6 @@ std::string SocketStream::getLocalAddressString(){
         return m_socket->getLocalAddress()->toString();
     }
     return "";
-}
-
-void SocketStream::reset(Socket::ptr socket,bool owner){
-    if(m_socket){
-        m_socket->close();
-    }
-    m_socket = socket;
-    m_owner = owner;
 }
 
 }

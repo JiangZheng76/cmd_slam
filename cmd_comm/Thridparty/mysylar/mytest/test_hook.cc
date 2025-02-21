@@ -8,7 +8,7 @@
  */
 #include "sylar.h"
 #include "hook.h"
-#include "iomanager.h"
+#include "iomanager.hpp"
 #include <sys/types.h>          /* See NOTES */
 #include <sys/socket.h>
 #include <arpa/inet.h>

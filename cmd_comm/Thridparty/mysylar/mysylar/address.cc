@@ -1,8 +1,8 @@
 /*
  * @Author: Jiangzheng 2440877322@qq.com
  * @Date: 2024-02-28 22:46:29
- * @LastEditors: Johnathan 2440877322@qq.com
- * @LastEditTime: 2024-07-06 12:43:46
+ * @LastEditors: Jiangzheng 2440877322@qq.com
+ * @LastEditTime: 2024-03-19 10:44:04
  * @FilePath: /mysylar/mysylar/address.cc
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -36,10 +36,6 @@ std::string Address::toString(){
     insert(ss);
     return ss.str();
 }
-
-std::ostream& operator<<(std::ostream& os,const Address* addr){
-    return addr->insert(os);
-}
 /**
  * @brief 不知道地址类型的时候，进行创建地址，getaddrinfo直接返回地址sockaddr
  * @param {sockaddr*} addr
@@ -65,7 +61,13 @@ Address::ptr Address::Create(sockaddr* addr){
     
     return rt;
 }
-
+/// @brief 
+/// @param result 
+/// @param host 
+/// @param family 
+/// @param type 
+/// @param protocol 
+/// @return 
 bool Address::Lookup(std::vector<Address::ptr>& result, const std::string& host,int family,int type,int protocol){
     addrinfo hints,* results, * next;
     hints.ai_flags = 0;
@@ -128,7 +130,12 @@ bool Address::Lookup(std::vector<Address::ptr>& result, const std::string& host,
     freeaddrinfo(results);
     return true;
 }
-
+/// @brief 通过名字（支持域名或者 ip）创建 address
+/// @param host ip / 域名
+/// @param family 
+/// @param type 
+/// @param protocol 
+/// @return 
 std::shared_ptr<IPAddress> Address::LookupAnyIPAddress(const std::string& host,int family,int type,int protocol ){
     std::vector<Address::ptr>  result;
     bool rt = Lookup(result,host,family,type,protocol);

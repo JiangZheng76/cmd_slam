@@ -24,6 +24,7 @@ public:
 
     struct Node {
         Node(size_t s);
+        Node(char* p,size_t s);
         Node();
         ~Node();
 
@@ -33,6 +34,7 @@ public:
     };
 
     ByteArray(size_t base_size = 4096);
+    ByteArray(char* buf,size_t base_size);
     ~ByteArray();
 
     /**
@@ -104,7 +106,9 @@ public:
 
     // 内部操作
     void clear();
-
+    void reset();
+    
+    void write(std::ostream& os,size_t size);
     void write(const void* buf,size_t size);
     void read(void* buf,size_t size);
     void read(void* buf,size_t size, size_t position) const;
@@ -147,7 +151,10 @@ private:
     size_t getCapacity() const {return m_capacity - m_position;}
 
 private:
-    size_t m_position;  // 当前操作到的位置
+    // TODO 需要修改添加一个读写 posiiton，只有一个 position 不行
+    size_t m_position;      // 当前写到的位置
+    size_t m_read_position; // 当前 读到的位置
+    
     size_t m_capacity;  // 当前总容量
     size_t m_baseSize;  // 基础容量？？？作用是什么？（一个扩充块的单位大小）
     size_t m_size;      // 当前已使用大小
