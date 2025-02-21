@@ -18,7 +18,7 @@
 #include <log.h>
 #include <socket_stream.h>
 
-#include <thread.hh>
+#include <thread.h>
 // using namespace mysylar;
 // logger
 namespace cmd {
