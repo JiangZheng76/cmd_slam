@@ -1,5 +1,6 @@
 /build/
 out/
+Docker/
 
 % Ignore VS code settings
 .vscode
