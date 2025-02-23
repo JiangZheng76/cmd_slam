@@ -5,6 +5,7 @@ lib/
 bin/
 vo/
 unkonw/
+.vscode/
 
 OtherSlam/
 /OtherSlam/

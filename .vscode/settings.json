@@ -89,7 +89,9 @@
         "nonlinearoptimization": "cpp",
         "hash_map": "cpp",
         "hash_set": "cpp",
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "dense": "cpp",
+        "queue": "cpp"
     },
     "cmake.sourceDirectory": "/home/sysu/cmd_ws/src/cmd-slam/cmd_backend",
     "ros.distro": "noetic",
