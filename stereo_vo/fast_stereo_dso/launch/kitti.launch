@@ -6,11 +6,12 @@
   <arg name="right_topic" default="camera/right/image_raw" />
   <arg name="save_path" default="" />
   <arg name="time" default="2" />
+  <arg name="agent" default="1" />
   
   <node name="backend" pkg="cmd_backend" type="cmd_backend_node" output="screen" required="true">
   </node>
-
-  <node name="stereo_dso1" pkg="fast_stereo_dso" type="dso_dataset_ros" output="screen" required="true">
+  
+  <node name="stereo_dso$(arg agent)" pkg="fast_stereo_dso" type="dso_dataset_ros" output="screen" required="true">
     <param name="files" value="$(arg files_path)" />
     <param name="bag" value="$(arg bag_path)/kitti.bag"/>
     <param name="calib" value="$(find fast_stereo_dso)/calib/kitti/$(arg seqnum).txt" />
