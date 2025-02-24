@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package format="2">
+    <name>cmd_stereo_dso</name>
+    <version>1.0.0</version>
+    <description>cmd</description>
+    <maintainer email="2440877322@qq.com"> </maintainer>
+    <license>BSD</license>
+
+    <buildtool_depend>catkin</buildtool_depend>
+    <buildtool_depend>catkin_simple</buildtool_depend>
+
+
+    <depend>roscpp</depend>
+    <depend>std_msgs</depend>
+    <depend>cmd_comm</depend>
+    <depend>cmd_frontend</depend>
+    <depend>yaml-cpp</depend>
+    <depend>geometry_msgs</depend>
+    <depend>rosbag</depend>
+    <depend>sensor_msgs</depend>
+    <depend>cv_bridge</depend>
+    <!-- <depend>eigen_catkin</depend> -->
+    <depend>image_transport</depend>
+    <depend>message_filters</depend>
+    <export></export>
+</package>

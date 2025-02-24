@@ -1,0 +1,50 @@
+<launch>
+  <arg name="seqnum" default="00" />
+  <arg name="files_path" default="/media/sysu/200GB_Other/Dataset/Slam/KITTI/sequences/$(arg seqnum)/multi-robot/" />
+  <arg name="bag_path" default="/media/sysu/200GB_Other/Dataset/Slam/KITTI/sequences/$(arg seqnum)/multi-robot/" />
+  <arg name="calib_path"
+    default="/home/sysu/cmd_ws/src/cmd-slam/vo/stereo-dso/cams/kitti/0_2/camera.txt" />
+  <arg name="left_topic" default="camera/left/image_raw" />
+  <arg name="right_topic" default="camera/right/image_raw" />
+
+  <node name="backend" pkg="cmd_backend" type="cmd_backend_node" 
+      output="screen" required="true">
+  </node>
+    
+  <node name="stereo_dso1" pkg="cmd_stereo_dso" type="dso_dataset_ros" output="screen" required="true">
+    <param name="files" value="$(arg files_path)/1" />
+    <param name="bag" value="$(arg bag_path)/1.bag"/>
+    <param name="calib" value="$(find cmd_stereo_dso)/calib/kitti/$(arg seqnum).txt" />
+    <param name="topic0" value="$(arg left_topic)" />
+    <param name="topic1" value="$(arg right_topic)" />
+    <param name="preset" value="0" />
+    <param name="mode" value="1" />
+    <param name="quiet" value="1" />
+    <param name="nomt" value="1" />
+  </node>
+
+  <node name="stereo_dso2" pkg="cmd_stereo_dso" type="dso_dataset_ros" output="screen" required="true">
+    <param name="files" value="$(arg files_path)/2" />
+    <param name="bag" value="$(arg bag_path)/2.bag"/>
+    <param name="calib" value="$(find cmd_stereo_dso)/calib/kitti/$(arg seqnum).txt" />
+    <param name="topic0" value="$(arg left_topic)" />
+    <param name="topic1" value="$(arg right_topic)" />
+    <param name="preset" value="0" />
+    <param name="mode" value="1" />
+    <param name="quiet" value="1" />
+    <param name="nomt" value="1" />
+  </node>
+
+  <node name="stereo_dso3" pkg="cmd_stereo_dso" type="dso_dataset_ros" output="screen" required="true">
+    <param name="files" value="$(arg files_path)/3" />
+    <param name="bag" value="$(arg bag_path)/3.bag"/>
+    <param name="calib" value="$(find cmd_stereo_dso)/calib/kitti/$(arg seqnum).txt" />
+    <param name="topic0" value="$(arg left_topic)" />
+    <param name="topic1" value="$(arg right_topic)" />
+    <param name="preset" value="0" />
+    <param name="mode" value="1" />
+    <param name="quiet" value="1" />
+    <param name="nomt" value="1" />
+  </node>
+</launch>
+  

@@ -236,7 +236,8 @@ bool mkdirParentFile(const std::string &filename) {
   if (!(stat(parent_path.c_str(), &st1) == 0 && S_ISDIR(st1.st_mode))) {
     int parent_result = mkdir(parent_path.c_str(), 0777);
     if (parent_result == -1) {
-      std::cout << "mkdirParentFile() mkdir " << parent_path << " failed" << std::endl;
+      std::cout << "mkdirParentFile() mkdir " << parent_path << " failed"
+                << std::endl;
       SYLAR_LOG_ERROR(g_logger_viewer) << "mkdir " << parent_path << " failed";
       return false;
     }
@@ -326,6 +327,10 @@ void PangolinViewer::saveTumTrajectory(const std::string &filename) {
     }
     file_stream.close();
     std::cout << "save tum trajectory to " << client_filename << std::endl;
+  }
+  if (m_agent_displays.size() == 0) {
+    std::cout << "FAILED save tum trajectory to" << filename
+              << ",m_agent_displays.size() == 0" << std::endl;
   }
   ShowTimeCostsAndSaveLocal("Trajectory/backend_result.txt");
 }

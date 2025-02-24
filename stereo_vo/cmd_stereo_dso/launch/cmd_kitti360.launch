@@ -1,0 +1,56 @@
+<launch>
+  <arg name="files_path" default="/media/sysu/Other/Dataset/Slam/kitti360/data_2d_raw/2013_05_28_drive_0009_sync/multi_robot" />
+  <arg name="bag_path" default="/media/sysu/Other/Dataset/Slam/kitti360/data_2d_raw/2013_05_28_drive_0009_sync/multi_robot" />
+  <arg name="calib_path"
+    default="$(find cmd_stereo_dso)/calib/kitti360/cam.txt" />
+  <arg name="left_topic_name" default="image_0" />
+  <arg name="right_topic_name" default="image_1" />
+
+  <node name="stereo_dso1" pkg="cmd_stereo_dso" type="dso_dataset_ros" output="screen" required="true">
+    <param name="files" value="$(arg files_path)" />
+    <param name="bag" value="$(arg bag_path)/1/output.bag" />
+    <param name="calib" value="$(arg calib_path)" />
+    <param name="topic0" value="$(arg left_topic_name)" />
+    <param name="topic1" value="$(arg right_topic_name)" />
+    <param name="preset" value="0" />
+    <param name="mode" value="1" />
+    <param name="quiet" value="1" />
+    <param name="nomt" value="1" />
+  </node>
+
+  <node name="stereo_dso2" pkg="cmd_stereo_dso" type="dso_dataset_ros" output="screen" required="true">
+    <param name="files" value="$(arg files_path)" />
+    <param name="bag" value="$(arg bag_path)/2/output.bag" />
+    <param name="calib" value="$(arg calib_path)" />
+    <param name="topic0" value="$(arg left_topic_name)" />
+    <param name="topic1" value="$(arg right_topic_name)" />
+    <param name="preset" value="0" />
+    <param name="mode" value="1" />
+    <param name="quiet" value="1" />
+    <param name="nomt" value="1" />
+  </node>
+
+  <node name="stereo_dso3" pkg="cmd_stereo_dso" type="dso_dataset_ros" output="screen" required="true">
+    <param name="files" value="$(arg files_path)" />
+    <param name="bag" value="$(arg bag_path)/3/output.bag" />
+    <param name="calib" value="$(arg calib_path)" />
+    <param name="topic0" value="$(arg left_topic_name)" />
+    <param name="topic1" value="$(arg right_topic_name)" />
+    <param name="preset" value="0" />
+    <param name="mode" value="1" />
+    <param name="quiet" value="1" />
+    <param name="nomt" value="1" />
+  </node>
+
+  <node name="stereo_dso4" pkg="cmd_stereo_dso" type="dso_dataset_ros" output="screen" required="true">
+    <param name="files" value="$(arg files_path)" />
+    <param name="bag" value="$(arg bag_path)/4/output.bag" />
+    <param name="calib" value="$(arg calib_path)" />
+    <param name="topic0" value="$(arg left_topic_name)" />
+    <param name="topic1" value="$(arg right_topic_name)" />
+    <param name="preset" value="0" />
+    <param name="mode" value="1" />
+    <param name="quiet" value="1" />
+    <param name="nomt" value="1" />
+  </node>
+</launch>

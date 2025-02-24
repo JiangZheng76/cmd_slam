@@ -1,0 +1,71 @@
+<launch>
+  <arg name="seqnum" default="10" />
+  <arg name="files_path" default="/media/sysu/Other/Dataset/Slam/malaga/multi_robot" />
+  <arg name="bag_path" default="/media/sysu/Other/Dataset/Slam/malaga/multi_robot" />
+  <arg name="left_topic" default="image_0" />
+  <arg name="right_topic" default="image_1" />
+<!-- 
+ 4 5 6 7 8 9
+ -->
+  <group ns="node4">
+    <arg name="num" value="4" /> 
+    <node name="stereo_dso" pkg="cmd_stereo_dso" type="dso_dataset_ros" output="screen" required="true">
+      <!-- 需要修改 num 和 name -->
+      <param name="files" value="$(arg files_path)/$(arg num)" />
+      <param name="bag" value="$(arg bag_path)/$(arg num)/output.bag"/>
+      <param name="calib" value="$(find cmd_stereo_dso)/calib/malaga/cam.txt" />
+      <param name="topic0" value="$(arg left_topic)" />
+      <param name="topic1" value="$(arg right_topic)" />
+      <param name="preset" value="0" />
+      <param name="mode" value="1" />
+      <param name="quiet" value="1" />
+      <param name="nomt" value="1" />
+    </node>
+  </group>
+  <group ns="node5">
+    <arg name="num" value="5" /> 
+    <node name="stereo_dso" pkg="cmd_stereo_dso" type="dso_dataset_ros" output="screen" required="true">
+      <!-- 需要修改 num 和 name -->
+      <param name="files" value="$(arg files_path)/$(arg num)" />
+      <param name="bag" value="$(arg bag_path)/$(arg num)/output.bag"/>
+      <param name="calib" value="$(find cmd_stereo_dso)/calib/malaga/cam.txt" />
+      <param name="topic0" value="$(arg left_topic)" />
+      <param name="topic1" value="$(arg right_topic)" />
+      <param name="preset" value="0" />
+      <param name="mode" value="1" />
+      <param name="quiet" value="1" />
+      <param name="nomt" value="1" />
+    </node>
+  </group>
+  <group ns="node6">
+    <arg name="num" value="6" /> 
+    <node name="stereo_dso" pkg="cmd_stereo_dso" type="dso_dataset_ros" output="screen" required="true">
+      <!-- 需要修改 num 和 name -->
+      <param name="files" value="$(arg files_path)/$(arg num)" />
+      <param name="bag" value="$(arg bag_path)/$(arg num)/output.bag"/>
+      <param name="calib" value="$(find cmd_stereo_dso)/calib/malaga/cam.txt" />
+      <param name="topic0" value="$(arg left_topic)" />
+      <param name="topic1" value="$(arg right_topic)" />
+      <param name="preset" value="0" />
+      <param name="mode" value="1" />
+      <param name="quiet" value="1" />
+      <param name="nomt" value="1" />
+    </node>
+  </group>
+
+  <group ns="node7">
+    <arg name="num" value="7" /> 
+    <node name="stereo_dso" pkg="cmd_stereo_dso" type="dso_dataset_ros" output="screen" required="true">
+      <!-- 需要修改 num 和 name -->
+      <param name="files" value="$(arg files_path)/$(arg num)" />
+      <param name="bag" value="$(arg bag_path)/$(arg num)/output.bag"/>
+      <param name="calib" value="$(find cmd_stereo_dso)/calib/malaga/cam.txt" />
+      <param name="topic0" value="$(arg left_topic)" />
+      <param name="topic1" value="$(arg right_topic)" />
+      <param name="preset" value="0" />
+      <param name="mode" value="1" />
+      <param name="quiet" value="1" />
+      <param name="nomt" value="1" />
+    </node>
+  </group>
+</launch>

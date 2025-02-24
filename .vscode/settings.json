@@ -91,7 +91,11 @@
         "hash_set": "cpp",
         "filesystem": "cpp",
         "dense": "cpp",
-        "queue": "cpp"
+        "queue": "cpp",
+        "__hash_table": "cpp",
+        "__split_buffer": "cpp",
+        "__tree": "cpp",
+        "stack": "cpp"
     },
     "cmake.sourceDirectory": "/home/sysu/cmd_ws/src/cmd-slam/cmd_backend",
     "ros.distro": "noetic",
