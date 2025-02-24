@@ -8,7 +8,6 @@
 #include "loopframe.hpp"
 #include "typedefs_backend.hpp"
 #include "visualization/pangolin_viewer.hpp"
-#include "TimeRecord/TimeRecord.hpp"
 
 namespace cmd {
 static LoggerPtr g_logger_map = SYLAR_LOG_NAME("Map");
@@ -145,9 +144,8 @@ void Mapmanager::Run() {
     }
     usleep(50);
   }
-  SYLAR_LOG_INFO(g_logger_map) << "--- END map manager ---";
   viewer_->saveTumTrajectory("Trajectory");
-  SYLAR_LOG_INFO(g_logger_map) << ShowTimeCostsAndSaveLocal("backend_result.txt");
+  SYLAR_LOG_INFO(g_logger_map) << "--- END map manager ---";
 }
 void Mapmanager::OptimizeRun() {
   SYLAR_LOG_DEBUG(g_logger_map) << "+++ OPT START +++";

@@ -325,10 +325,9 @@ void PangolinViewer::saveTumTrajectory(const std::string &filename) {
                   << std::endl;
     }
     file_stream.close();
-    SYLAR_LOG_INFO(g_logger_viewer)
-        << "save tum trajectory to " << client_filename;
     std::cout << "save tum trajectory to " << client_filename << std::endl;
   }
+  ShowTimeCostsAndSaveLocal("Trajectory/backend_result.txt");
 }
 
 }  // namespace cmd

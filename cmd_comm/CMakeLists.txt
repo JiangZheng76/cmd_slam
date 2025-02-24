@@ -46,6 +46,7 @@ set(cmd_comm_LIBRARIES ${LIBS})
 set(COMM_SOURCE_FILES
     src/msgs/msg_loopframe.cpp
     src/comm_base.cpp
+    src/TimeRecord/TimeRecord.cpp
 )
 set(COMM_HEADER_FILES
     src/msgs/msg_loopframe.hpp
@@ -53,6 +54,7 @@ set(COMM_HEADER_FILES
     src/cmd_comm.hpp
     src/typedefs.hpp
 
+    src/TimeRecord/TimeRecord.hpp
 )
 
 cs_add_library(cmd_comm ${COMM_SOURCE_FILES} ${COMM_HEADER_FILES})

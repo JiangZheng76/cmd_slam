@@ -19,6 +19,7 @@
 #include <socket_stream.h>
 
 #include <thread.h>
+#include "TimeRecord/TimeRecord.hpp"
 // using namespace mysylar;
 // logger
 namespace cmd {

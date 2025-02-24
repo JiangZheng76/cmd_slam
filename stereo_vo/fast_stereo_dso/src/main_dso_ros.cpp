@@ -388,7 +388,7 @@ int main(int argc, char **argv) {
   gettimeofday(&tv_end, NULL);
   savepath += "/";
   fullSystem->printResult(savepath+"Traject.txt");
-  ShowTimeCosts(savepath+"TimeResult.txt");
+  std::cout << ShowClientTimeCost(savepath+"TimeResult.txt") << std::endl;
   exit(0);
 
   for (IOWrap::Output3DWrapper *ow : fullSystem->outputWrapper) {

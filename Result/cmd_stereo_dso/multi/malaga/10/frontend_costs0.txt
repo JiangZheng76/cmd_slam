@@ -1,0 +1,15 @@
+========================= cost result =========================
+left_selcetpoint_costs[average:1.00896ms][nums:6924],[min:0.671ms],[max:15.957ms]
+right_selcetpoint_costs[average:1.01057ms][nums:6924],[min:0.674ms],[max:3.322ms]
+tracking_costs[average:62.7962ms][nums:20772],[min:0.16ms],[max:420.609ms]
+point_preprocess_costs[average:-nanms][nums:0],[min:2.14748e+09ms],[max:-2.14748e+09ms]
+generate_sc_costs[average:-nanms][nums:0],[min:2.14748e+09ms],[max:-2.14748e+09ms]
+ring_key_costs[average:-nanms][nums:0],[min:2.14748e+09ms],[max:-2.14748e+09ms]
+scancontext_costs[average:-nanms][nums:0],[min:2.14748e+09ms],[max:-2.14748e+09ms]
+icp_costs[average:-nanms][nums:0],[min:2.14748e+09ms],[max:-2.14748e+09ms]
+pcm_costs[average:-nanms][nums:0],[min:2.14748e+09ms],[max:-2.14748e+09ms]
+pgo_costs[average:-nanms][nums:0],[min:2.14748e+09ms],[max:-2.14748e+09ms]
+recv_data-1[:0.000205339KB/s][total:0.2KB],[duration:974s]
+recv_data1[:0KB/s][total:0KB],[duration:974s]
+send_data1[:14.9724KB/s][total:14568.1KB],[duration:973s]
+---------------------------------------------------------------

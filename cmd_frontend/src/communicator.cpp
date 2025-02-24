@@ -16,6 +16,7 @@ FrontEndComm::FrontEndComm(std::string ip, std::string port)
   // bool rt = sock->connect(addr);
   while (!sock->connect(addr)) {
     SYLAR_LOG_WARN(g_logger_frontend) << "waiting for server...";
+    std::cout << "waiting for server...";
     sock->dump(std::cout);
     // SYLAR_ASSERT(false);
     sleep(1);

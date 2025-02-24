@@ -1,6 +1,5 @@
 #include "loop_handler.hpp"
 
-#include "TimeRecord/TimeRecord.hpp"
 #include "loop_closure/icp.h"
 #include "loop_closure/scancontext.hpp"
 #include "loop_closure/search_place.h"

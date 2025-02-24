@@ -62,6 +62,7 @@ int CommunicatorBase::sendAll(MsgType &msg_send) {
   size_t byte_left = len * sizeof(msg_send[0]);
   int rt = write(&msg_send[0], byte_left);
   collectTotalSendByte(rt);
+  DataRecordTool(send_data,getClientId(),rt);
   return rt;
 }
 /// @brief 先发送 MsgType 信息，再发送 msg package
@@ -72,6 +73,7 @@ int CommunicatorBase::sendAll(std::stringstream &msg) {
   std::string tmp_msg = msg.str();
   int rt = write(&tmp_msg[0], tmp_msg.size());
   collectTotalSendByte(tmp_msg.size());
+  DataRecordTool(send_data,getClientId(),rt);
   return rt;
 }
 size_t CommunicatorBase::collectTotalSendByte(int bytes) {
@@ -142,6 +144,7 @@ int CommunicatorBase::recvAll(unsigned int sz, std::vector<char> &buffer) {
     }
     tot_bytes += n_bytes;
   }
+  DataRecordTool(recv_data,getClientId(),tot_bytes);
   collectTotalRecvByte(tot_bytes);
   // 表示成功
   return 0;
@@ -194,10 +197,12 @@ int CommunicatorBase::recvAll(unsigned int sz, MsgType &buffer) {
             << "-------------------------------------------------";
       }
       m_sock->dump(std::cout) << std::endl;
+      
       return -1;
     }
     tot_bytes += n_bytes;
   }
+  DataRecordTool(recv_data,getClientId(),tot_bytes);
   collectTotalRecvByte(tot_bytes);
   return 0;
 }
@@ -291,8 +296,8 @@ size_t CommunicatorBase::sendMsgContainer(MessageContainer &msg) {
   size_t info_bytes = sendAll(msg.msg_info);
   size_t data_bytes = sendAll(msg.msg_data);
   // SYLAR_LOG_DEBUG(g_logger_base) << "sendMsgContainer() send data_bytes: "
-  //                               << data_bytes << " bytes and info_bytes "
-  //                               << info_bytes << " bytes";
+                                // << data_bytes << " bytes and info_bytes "
+                                // << info_bytes << " bytes";
   return data_bytes;
 }
 

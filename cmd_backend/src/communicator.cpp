@@ -6,10 +6,8 @@
 
 namespace cmd {
 static LoggerPtr g_logger_comm = SYLAR_LOG_NAME("Comm");
-Communicator::Communicator(int client_id, SocketPtr sock,
-                           MapmanagerPtr mapMgr)
-    : CommunicatorBase(client_id, sock),
-      m_mapmanager(mapMgr) {
+Communicator::Communicator(int client_id, SocketPtr sock, MapmanagerPtr mapMgr)
+    : CommunicatorBase(client_id, sock), m_mapmanager(mapMgr) {
   MessageContainer out_container;
   // 构建返回的设置client_id的msg
   out_container.msg_info.push_back(1);
@@ -20,16 +18,20 @@ Communicator::Communicator(int client_id, SocketPtr sock,
   }
 
   sendMsgContainer(out_container);
-  SYLAR_LOG_INFO(g_logger_comm) << "Pass new ID " << m_client_id << " to client";
+  SYLAR_LOG_INFO(g_logger_comm)
+      << "Pass new ID " << m_client_id << " to client";
 }
 
 void Communicator::Run() {
   Thread thread(std::bind(&Communicator::recvMsg, this), "recv msg thread");
   thread.detach();
-
+  DataRecordTool(recv_data, getClientId(), 0);
+  DataRecordTool(send_data, getClientId(), 0);
   SYLAR_LOG_INFO(g_logger_comm)
       << "Agent_" << m_client_id << " START communicator.";
+  std::cout << "Agent_" << m_client_id << " START communicator.";
   // 修改验证通信
+
   while (true) {
     int check_num_map;
 
@@ -46,6 +48,8 @@ void Communicator::Run() {
 
     if (this->shallFinish()) {
       showResult();
+      DataRecordTool(recv_data).end(getClientId());
+      DataRecordTool(send_data).end(getClientId());
       break;
     }
     usleep(500);

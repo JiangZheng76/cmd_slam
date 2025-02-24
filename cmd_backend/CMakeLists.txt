@@ -77,7 +77,7 @@ set(BACKEND_SOURCE_FILES
     src/visualization/pangolin_viewer.cpp
     src/visualization/loopframe_display.cpp
     
-    src/TimeRecord/TimeRecord.cpp
+    # src/TimeRecord/TimeRecord.cpp
 )
 
 # cs_add_library(cmd_backend ${BACKEND_SOURCE_FILES})
