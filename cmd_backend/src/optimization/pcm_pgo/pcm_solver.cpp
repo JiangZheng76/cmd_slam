@@ -31,6 +31,10 @@ bool PcmSolver::checkFactorBufferWithLock(LoopEdgeVector &les) {
   }
   return false;
 }
+/// @brief 将 les 的顶点放到 factors约束边 和 values顶点位姿
+/// @param les 
+/// @param factors 
+/// @param values 
 void PcmSolver::convertFactorAndValue(const LoopEdgeVector &les,
                                       FactorGraph &factors,
                                       LoopframeValue &values) {
@@ -87,7 +91,7 @@ void PcmSolver::initFrameAndUpdateOdom(LoopframePtr loopframe,
   auto odom_factor = les[0];
   LoopframePtr prev_frame = odom_factor->m_from_lf;  // from 是上一帧
   TransMatrixType Tpc = odom_factor->m_t_tf.inverse();
-  initFrame(prev_frame, loopframe, Tpc);
+  initFrame(prev_frame, loopframe, Tpc); // 初始化 loopframe 位姿
   FactorGraph new_factors;
   LoopframeValue new_vals;  // [key,twc]
   if (les.size() != 0) {

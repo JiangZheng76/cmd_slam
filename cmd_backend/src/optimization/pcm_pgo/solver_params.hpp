@@ -47,7 +47,7 @@ struct PcmParams {
         // dist_rot_threshold(0.001),
         dist_trans_threshold(PCM_TRANS_THRES),  // 距离 10m
         dist_rot_threshold(PCM_ROT_THRES),
-        incremental(false) {}
+        incremental(true) {}
   // if threshold is < 0, check disabled
   // for Pcm
   double odom_threshold;

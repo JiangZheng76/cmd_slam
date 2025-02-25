@@ -61,7 +61,10 @@ int Pcm::getKeyMap(LoopframeKey key) {
   auto map_id = findAndInsertClient(map_clients_, client);
   return map_id;
 }
-/// 分类到 output_value 中
+/// @brief 将 new_loopframes 新帧添加到对应的map的values 里面
+/// @param new_loopframes
+/// @param output_values
+/// @param output_nfg
 void Pcm::classifyNewLoopframeToMap(const LoopframeValue &new_loopframes,
                                     std::vector<LoopframeValue> *output_values,
                                     std::vector<FactorGraph> *output_nfg) {
@@ -514,12 +517,12 @@ TransMatrixType Pcm::gncRobustPoseAveraging(
   TransMatrixType result(estimate.at<gtsam::Pose3>(0).matrix());
   return result;
 }
-bool isFarEnough(LoopEdge & factor){
-    auto prev = factor.m_from_lf;
-    auto cur = factor.m_to_lf;
-    auto prev_id = prev->m_lf_id;
-    auto cur_id = cur->m_lf_id;
-    return prev_id + ID_DISTANCE_THRES <= cur_id;
+bool isFarEnough(LoopEdge &factor) {
+  auto prev = factor.m_from_lf;
+  auto cur = factor.m_to_lf;
+  auto prev_id = prev->m_lf_id;
+  auto cur_id = cur->m_lf_id;
+  return prev_id + ID_DISTANCE_THRES <= cur_id;
 }
 
 void Pcm::parseAndIncrementAdjMatrix(
@@ -802,7 +805,9 @@ bool Pcm::checkOdomConsistent(TransMatrixType &trans, double &dist) {
   }
   return false;
 }
-
+/// @brief 将当前帧加入到pcm 的所有轨迹odom_trajectories_（不会被优化）变量中
+/// @param client
+/// @param factor
 void Pcm::updateOdom(int client, const LoopEdge &factor) {
   int map_id = findAndInsertClient(map_clients_, client);
   nfg_odom_[map_id].add(factor);

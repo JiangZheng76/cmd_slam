@@ -2,14 +2,14 @@
   <arg name="seqnum" default="01" />
   <arg name="dataset" default="kitti" />
   <arg name="files_path" default="/media/sysu/Other/Dataset/Slam/$(arg dataset)/sequences/$(arg seqnum)/multi-robot/" />
-  <arg name="left_topic" default="camera/left/image_raw" />
-  <arg name="right_topic" default="camera/right/image_raw" />
+  <arg name="left_topic" default="/camera/left/image_raw" />
+  <arg name="right_topic" default="/camera/right/image_raw" />
   <arg name="save_path" default="" />
   <arg name="time" default="" />
   <arg name="ag_n" default="0" />
 
   <node name="cmd_stereo_dso$(arg ag_n)" pkg="cmd_stereo_dso" type="dso_dataset_ros" output="screen" required="true">
-    <param name="files" value="$(arg files_path)" />
+    <param name="files" value="$(arg files_path)/$(arg ag_n)" />
     <param name="bag" value="$(arg files_path)/$(arg ag_n).bag"/>
     <param name="calib" value="$(find cmd_stereo_dso)/calib/$(arg dataset)/$(arg seqnum).txt" />
     <param name="topic0" value="$(arg left_topic)" />
